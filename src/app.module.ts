@@ -6,6 +6,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { ZodSerializerInterceptor } from 'nestjs-zod';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { validateEnv, type Env } from './config/env';
 import { HealthModule } from './health/health.module';
 import { DatabaseModule } from './infra/database/database.module';
@@ -62,9 +64,11 @@ import { UsersModule } from './users/users.module';
     DatabaseModule,
     HealthModule,
     UsersModule,
+    AuthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
   ],
 })
