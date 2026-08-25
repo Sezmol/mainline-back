@@ -1,0 +1,86 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, type EntityManager } from 'typeorm';
+import { UsersRepository } from '../../users.repository';
+import {
+  EmailTakenError,
+  NicknameTakenError,
+  type CreateUserInput,
+  type User,
+  type UserWithPassword,
+} from '../../users.types';
+import { UserEntity } from './user.entity';
+import { toUser } from './user.mapper';
+
+const UNIQUE_VIOLATION = '23505';
+interface PostgresError {
+  code: string;
+  constraint?: string;
+  detail?: string;
+}
+const asUniqueViolation = (error: unknown) => {
+  if (typeof error !== 'object' || error === null) return null;
+  const candidate = error as { code?: unknown; driverError?: unknown };
+  const source = (candidate.code ? candidate : candidate.driverError) as
+    PostgresError | undefined;
+  return source?.code === UNIQUE_VIOLATION ? source : null;
+};
+@Injectable()
+export class UserTypeormRepository extends UsersRepository {
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly users: Repository<UserEntity>,
+  ) {
+    super();
+  }
+
+  async create(input: CreateUserInput, manager?: EntityManager) {
+    const repository = manager ? manager.getRepository(UserEntity) : this.users;
+
+    try {
+      return toUser(await repository.save(repository.create(input)));
+    } catch (error) {
+      const violation = asUniqueViolation(error);
+      if (violation) {
+        const target = `${violation.constraint ?? ''} ${violation.detail ?? ''}`;
+        throw target.includes('email')
+          ? new EmailTakenError()
+          : new NicknameTakenError();
+      }
+      throw error;
+    }
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const found = await this.users.findOne({ where: { id } });
+    return found ? toUser(found) : null;
+  }
+
+  async findByNickname(nickname: string): Promise<User | null> {
+    const found = await this.users.findOne({
+      where: { nickname: nickname.toLowerCase() },
+    });
+    return found ? toUser(found) : null;
+  }
+
+  async findWithPasswordByNickname(
+    nickname: string,
+  ): Promise<UserWithPassword | null> {
+    const found = await this.users
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.nickname = :nickname', { nickname: nickname.toLowerCase() })
+      .getOne();
+
+    if (!found) return null;
+    return { user: toUser(found), passwordHash: found.passwordHash };
+  }
+
+  existsByNickname(nickname: string) {
+    return this.users.existsBy({ nickname: nickname.toLowerCase() });
+  }
+
+  existsByEmail(email: string) {
+    return this.users.existsBy({ email: email.toLowerCase() });
+  }
+}
