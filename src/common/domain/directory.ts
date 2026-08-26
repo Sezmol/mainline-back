@@ -23,3 +23,7 @@ export const roleForSpeciality = (speciality: Speciality): Role => {
       return 'member';
   }
 };
+
+export const POST_TYPES = ['content', 'vacancy', 'event'] as const;
+
+export type PostType = (typeof POST_TYPES)[number];

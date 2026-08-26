@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { validateEnv, type Env } from './config/env';
 import { HealthModule } from './health/health.module';
+import { PostsModule } from './posts/posts.module';
 import { DatabaseModule } from './infra/database/database.module';
 import { UsersModule } from './users/users.module';
 
@@ -65,6 +66,7 @@ import { UsersModule } from './users/users.module';
     HealthModule,
     UsersModule,
     AuthModule,
+    PostsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
