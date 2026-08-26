@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { EntityManager } from 'typeorm';
+import { roleForSpeciality } from '../common/domain/directory';
 import { AppException } from '../common/errors/app.exception';
 import type {
   AvailabilityQueryDto,
   AvailabilityResponseDto,
 } from './dto/availability.dto';
+import type { UpdateUserDto } from './dto/update-user.dto';
 import { UsersRepository } from './users.repository';
 import {
   EmailTakenError,
@@ -34,15 +40,22 @@ export class UsersService {
     try {
       return await this.users.create(input, manager);
     } catch (error) {
-      if (error instanceof NicknameTakenError) {
-        throw AppException.conflict(error.message, {
-          nickname: [error.message],
-        });
-      }
-      if (error instanceof EmailTakenError) {
-        throw AppException.conflict(error.message, { email: [error.message] });
-      }
-      throw error;
+      throw this.asHttpError(error);
+    }
+  }
+
+  async update(id: string, viewerId: string, dto: UpdateUserDto) {
+    if (id !== viewerId) {
+      throw new ForbiddenException('You can only edit your own profile');
+    }
+
+    try {
+      return await this.users.update(id, {
+        ...dto,
+        role: roleForSpeciality(dto.speciality),
+      });
+    } catch (error) {
+      throw this.asHttpError(error);
     }
   }
 
@@ -50,7 +63,29 @@ export class UsersService {
     return this.users.findById(id);
   }
 
+  findByNickname(nickname: string) {
+    return this.users.findByNickname(nickname);
+  }
+
+  async getByNickname(nickname: string) {
+    const user = await this.users.findByNickname(nickname);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
   findWithPasswordByNickname(nickname: string) {
     return this.users.findWithPasswordByNickname(nickname);
+  }
+
+  private asHttpError(error: unknown) {
+    if (error instanceof NicknameTakenError) {
+      return AppException.conflict(error.message, {
+        nickname: [error.message],
+      });
+    }
+    if (error instanceof EmailTakenError) {
+      return AppException.conflict(error.message, { email: [error.message] });
+    }
+    return error;
   }
 }

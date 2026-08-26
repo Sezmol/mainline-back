@@ -6,6 +6,7 @@ import {
   EmailTakenError,
   NicknameTakenError,
   type CreateUserInput,
+  type UpdateUserInput,
   type User,
   type UserWithPassword,
 } from '../../users.types';
@@ -49,6 +50,23 @@ export class UserTypeormRepository extends UsersRepository {
       }
       throw error;
     }
+  }
+
+  async update(id: string, input: UpdateUserInput) {
+    try {
+      await this.users.update(id, {
+        ...input,
+        description: input.description || null,
+        workplace: input.workplace || null,
+      });
+    } catch (error) {
+      if (asUniqueViolation(error)) throw new NicknameTakenError();
+      throw error;
+    }
+
+    const updated = await this.findById(id);
+    if (!updated) throw new Error(`User ${id} vanished right after a write`);
+    return updated;
   }
 
   async findById(id: string): Promise<User | null> {

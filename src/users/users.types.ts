@@ -24,6 +24,16 @@ export interface CreateUserInput {
   role: Role;
 }
 
+export interface UpdateUserInput {
+  firstName: string;
+  lastName: string;
+  nickname: string;
+  speciality: Speciality;
+  role: Role;
+  description?: string;
+  workplace?: string;
+}
+
 export interface UserWithPassword {
   user: User;
   passwordHash: string;
