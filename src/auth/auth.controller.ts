@@ -13,7 +13,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { ZodResponse } from 'nestjs-zod';
 import type { Env } from '../config/env';
-import { SessionUserDto } from '../users/dto/user.dto';
+import { SessionUserDto, toSessionUser } from '../users/dto/user.dto';
 import type { User } from '../users/users.types';
 import { REFRESH_COOKIE } from './auth.constants';
 import { clearAuthCookies, setAuthCookies } from './auth.cookies';
@@ -26,17 +26,6 @@ import { TokenService } from './tokens/token.service';
 
 const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 
-const toSessionUser = (user: User): SessionUserDto => ({
-  id: user.id,
-  firstName: user.firstName,
-  lastName: user.lastName,
-  nickname: user.nickname,
-  email: user.email,
-  speciality: user.speciality,
-  role: user.role,
-  ...(user.description ? { description: user.description } : {}),
-  ...(user.workplace ? { workplace: user.workplace } : {}),
-});
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {

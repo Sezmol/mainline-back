@@ -1,11 +1,17 @@
 import type { EntityManager } from 'typeorm';
-import type { CreateUserInput, User, UserWithPassword } from './users.types';
+import type {
+  CreateUserInput,
+  UpdateUserInput,
+  User,
+  UserWithPassword,
+} from './users.types';
 
 export abstract class UsersRepository {
   abstract create(
     input: CreateUserInput,
     manager?: EntityManager,
   ): Promise<User>;
+  abstract update(id: string, input: UpdateUserInput): Promise<User>;
   abstract findById(id: string): Promise<User | null>;
   abstract findByNickname(nickname: string): Promise<User | null>;
   abstract findWithPasswordByNickname(

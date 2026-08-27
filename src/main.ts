@@ -39,7 +39,6 @@ const bootstrap = async () => {
     app,
     new DocumentBuilder()
       .setTitle('mainline API')
-      .setDescription('Professional network for engineers')
       .setVersion('0.1.0')
       .addCookieAuth('access_token', { type: 'apiKey', in: 'cookie' })
       .build(),
