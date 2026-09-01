@@ -21,6 +21,15 @@ export class AppException extends HttpException {
     );
   }
 
+  static validation(message: string, details?: FieldErrors) {
+    return new AppException(
+      ErrorCode.VALIDATION_FAILED,
+      message,
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      details,
+    );
+  }
+
   static conflict(message: string, details?: FieldErrors) {
     return new AppException(
       ErrorCode.CONFLICT,
