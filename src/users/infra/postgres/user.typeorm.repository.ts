@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, type EntityManager } from 'typeorm';
+import { asUniqueViolation } from '../../../infra/database/unique-violation';
 import { UsersRepository } from '../../users.repository';
 import {
   EmailTakenError,
@@ -13,19 +14,6 @@ import {
 import { UserEntity } from './user.entity';
 import { toUser } from './user.mapper';
 
-const UNIQUE_VIOLATION = '23505';
-interface PostgresError {
-  code: string;
-  constraint?: string;
-  detail?: string;
-}
-const asUniqueViolation = (error: unknown) => {
-  if (typeof error !== 'object' || error === null) return null;
-  const candidate = error as { code?: unknown; driverError?: unknown };
-  const source = (candidate.code ? candidate : candidate.driverError) as
-    PostgresError | undefined;
-  return source?.code === UNIQUE_VIOLATION ? source : null;
-};
 @Injectable()
 export class UserTypeormRepository extends UsersRepository {
   constructor(
