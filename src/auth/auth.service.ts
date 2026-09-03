@@ -4,6 +4,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import * as argon2 from 'argon2';
 import { DataSource, type EntityManager } from 'typeorm';
 import { roleForSpeciality } from '../common/domain/directory';
+import { ChatsService } from '../chats/chats.service';
 import { AppException } from '../common/errors/app.exception';
 import { UsersService } from '../users/users.service';
 import type { User } from '../users/users.types';
@@ -29,6 +30,7 @@ export class AuthService {
 
   constructor(
     private readonly users: UsersService,
+    private readonly chats: ChatsService,
     private readonly tokens: TokenService,
     private readonly refreshTokens: RefreshTokenRepository,
     @InjectDataSource() private readonly dataSource: DataSource,
@@ -50,6 +52,8 @@ export class AuthService {
         },
         manager,
       );
+
+      await this.chats.ensureFavorites(user.id, manager);
 
       return this.issueSession(user, manager);
     });
