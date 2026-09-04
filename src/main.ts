@@ -11,6 +11,7 @@ import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 import { ErrorResponse } from './common/errors/error-response';
 import { attachErrorResponses } from './common/errors/openapi-errors';
 import type { Env } from './config/env';
+import { SocketIoAdapter } from './infra/ws/socket-io.adapter';
 
 const bootstrap = async () => {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -20,16 +21,18 @@ const bootstrap = async () => {
   const prefix = config.get('API_PREFIX', { infer: true });
   const port = config.get('PORT', { infer: true });
 
+  const origins = config
+    .get('CORS_ORIGIN', { infer: true })
+    .split(',')
+    .map((origin) => origin.trim());
+
   app.setGlobalPrefix(prefix);
   app.use(helmet());
   app.use(cookieParser());
-  app.enableCors({
-    origin: config
-      .get('CORS_ORIGIN', { infer: true })
-      .split(',')
-      .map((origin) => origin.trim()),
-    credentials: true,
-  });
+  app.enableCors({ origin: origins, credentials: true });
+  app.useWebSocketAdapter(
+    new SocketIoAdapter(app, { path: `/${prefix}/socket.io`, origins }),
+  );
 
   app.useGlobalPipes(new ZodValidationPipe());
   app.useGlobalFilters(new AllExceptionsFilter());
