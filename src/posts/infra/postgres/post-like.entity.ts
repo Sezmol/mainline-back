@@ -10,7 +10,7 @@ import { UserEntity } from '../../../users/infra/postgres/user.entity';
 import { PostEntity } from './post.entity';
 
 @Entity('likes')
-@Index('likes_post_id_idx', ['postId'])
+@Index('likes_post_created_at_user_id_idx', ['postId', 'createdAt', 'userId'])
 export class PostLikeEntity {
   @PrimaryColumn({ type: 'uuid' })
   userId!: string;
