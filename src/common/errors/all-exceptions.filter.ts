@@ -30,7 +30,7 @@ const toFieldErrors = (issues: ZodIssue[]) => {
 };
 
 const STATUS_TO_CODE: Partial<Record<number, ErrorCode>> = {
-  [HttpStatus.BAD_REQUEST]: ErrorCode.VALIDATION_FAILED,
+  [HttpStatus.BAD_REQUEST]: ErrorCode.BAD_REQUEST,
   [HttpStatus.UNAUTHORIZED]: ErrorCode.UNAUTHORIZED,
   [HttpStatus.FORBIDDEN]: ErrorCode.FORBIDDEN,
   [HttpStatus.NOT_FOUND]: ErrorCode.NOT_FOUND,
