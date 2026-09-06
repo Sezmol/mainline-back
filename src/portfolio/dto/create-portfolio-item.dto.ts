@@ -5,7 +5,7 @@ const linkSchema = z
   .url({ protocol: /^https?$/, error: 'Enter a valid link' })
   .max(500, 'A link must be 500 characters or fewer');
 
-export const createProjectSchema = z.object({
+export const createPortfolioItemSchema = z.object({
   title: z
     .string()
     .trim()
@@ -20,4 +20,6 @@ export const createProjectSchema = z.object({
   previewUrl: linkSchema.optional(),
 });
 
-export class CreateProjectDto extends createZodDto(createProjectSchema) {}
+export class CreatePortfolioItemDto extends createZodDto(
+  createPortfolioItemSchema,
+) {}

@@ -10,12 +10,12 @@ import {
 } from 'typeorm';
 import { UserEntity } from '../../../users/infra/postgres/user.entity';
 
-@Entity('projects')
-export class ProjectEntity {
+@Entity('portfolio_items')
+export class PortfolioItemEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Index('projects_user_id_idx')
+  @Index('portfolio_items_user_id_idx')
   @Column({ type: 'uuid' })
   userId!: string;
 
