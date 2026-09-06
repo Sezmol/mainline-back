@@ -8,6 +8,7 @@ import { ZodSerializerInterceptor } from 'nestjs-zod';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AuthModule } from './auth/auth.module';
 import { ChatsModule } from './chats/chats.module';
+import { CompaniesModule } from './companies/companies.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { validateEnv, type Env } from './config/env';
 import { HealthModule } from './health/health.module';
@@ -75,6 +76,7 @@ import { UsersModule } from './users/users.module';
     InteractionsModule,
     NotificationsModule,
     ChatsModule,
+    CompaniesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
