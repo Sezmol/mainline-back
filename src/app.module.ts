@@ -16,6 +16,7 @@ import { HealthModule } from './health/health.module';
 import { InteractionsModule } from './interactions/interactions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
+import { ProjectsModule } from './projects/projects.module';
 import { PostsModule } from './posts/posts.module';
 import { DatabaseModule } from './infra/database/database.module';
 import { UsersModule } from './users/users.module';
@@ -74,6 +75,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     PostsModule,
     PortfolioModule,
+    ProjectsModule,
     InteractionsModule,
     NotificationsModule,
     ChatsModule,
