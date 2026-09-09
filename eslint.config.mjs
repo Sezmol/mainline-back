@@ -19,6 +19,8 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
+      'no-nested-ternary': 'error',
+      'no-empty': ['error', { allowEmptyCatch: true }],
       '@typescript-eslint/consistent-type-imports': [
         'error',
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
