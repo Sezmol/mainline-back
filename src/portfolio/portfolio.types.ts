@@ -1,6 +1,6 @@
 import type { User } from '../users/users.types';
 
-export interface Project {
+export interface PortfolioItem {
   id: string;
   title: string;
   description?: string;
@@ -11,7 +11,7 @@ export interface Project {
   updatedAt: Date;
 }
 
-export interface CreateProjectInput {
+export interface CreatePortfolioItemInput {
   userId: string;
   title: string;
   description?: string;
@@ -19,4 +19,4 @@ export interface CreateProjectInput {
   previewUrl?: string;
 }
 
-export type UpdateProjectInput = Omit<CreateProjectInput, 'userId'>;
+export type UpdatePortfolioItemInput = Omit<CreatePortfolioItemInput, 'userId'>;

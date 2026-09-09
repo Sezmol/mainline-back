@@ -10,21 +10,36 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  canActivate(context: ExecutionContext) {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+  async canActivate(context: ExecutionContext) {
+    if (!this.isPublic(context)) {
+      return (await super.canActivate(context)) as boolean;
+    }
+
+    try {
+      await super.canActivate(context);
+    } catch {}
+
+    return true;
+  }
+
+  handleRequest<TUser>(
+    error: unknown,
+    user: TUser,
+    _info: unknown,
+    context: ExecutionContext,
+  ) {
+    if (error || !user) {
+      if (this.isPublic(context)) return null as TUser;
+      throw AppException.unauthorized('Sign in to continue');
+    }
+
+    return user;
+  }
+
+  private isPublic(context: ExecutionContext) {
+    return this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-
-    if (isPublic) return true;
-
-    return super.canActivate(context);
-  }
-
-  handleRequest<TUser>(error: unknown, user: TUser) {
-    if (error || !user) {
-      throw AppException.unauthorized('Sign in to continue');
-    }
-    return user;
   }
 }
