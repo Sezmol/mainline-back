@@ -2,9 +2,18 @@ import { NestFactory } from '@nestjs/core';
 import * as argon2 from 'argon2';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
-import { roleForSpeciality, type Speciality } from '../common/domain/directory';
+import { CompaniesRepository } from '../companies/companies.repository';
+import { CompaniesService } from '../companies/companies.service';
+import { DepartmentsService } from '../companies/departments.service';
+import { TeamsService } from '../companies/teams.service';
+import type { CompanyRole, Speciality } from '../common/domain/directory';
+import { DEFAULT_STATUS, roleForSpeciality } from '../common/domain/directory';
+import { InvitesService } from '../invites/invites.service';
+import type { CreatePostDto } from '../posts/dto/create-post.dto';
 import { PostsService } from '../posts/posts.service';
+import { ProjectsService } from '../projects/projects.service';
 import { UsersService } from '../users/users.service';
+import type { User } from '../users/users.types';
 
 const PASSWORD = 'Password1';
 
@@ -16,12 +25,80 @@ interface SeedPerson {
   speciality: Speciality;
 }
 
-interface SeedPost {
+type WithoutCompany<T> = T extends unknown ? Omit<T, 'companyId'> : never;
+
+type SeedPost = {
   author: string;
-  direction: Speciality;
-  title: string;
-  body: string;
+  company?: string;
+} & WithoutCompany<CreatePostDto>;
+
+interface SeedCompany {
+  slug: string;
+  name: string;
+  description: string;
+  location: string;
+  website: string;
+  owner: string;
+  staff: { nickname: string; role: Exclude<CompanyRole, 'owner'> }[];
+  departments: { name: string; manager: string; members: string[] }[];
+  teams: {
+    name: string;
+    description: string;
+    lead: string;
+    members: string[];
+  }[];
 }
+
+const COMPANIES: SeedCompany[] = [
+  {
+    slug: 'acme',
+    name: 'Acme',
+    description: `We build the tooling four product teams stand on: the component library, the
+design tokens, the deployment pipeline nobody wants to think about.
+
+Small on purpose. Nine people, three departments, no layer of management between
+you and the person who decides.`,
+    location: 'Berlin',
+    website: 'https://acme.example',
+    owner: 'ada',
+    staff: [
+      { nickname: 'grace', role: 'hr' },
+      { nickname: 'linus', role: 'manager' },
+      { nickname: 'mira', role: 'employee' },
+      { nickname: 'omar', role: 'employee' },
+      { nickname: 'vera', role: 'hr' },
+    ],
+    departments: [
+      { name: 'Design', manager: 'linus', members: ['mira'] },
+      { name: 'Quality', manager: 'omar', members: [] },
+    ],
+    teams: [
+      {
+        name: 'Alpha',
+        description: 'Design system rewrite, one quarter, two departments.',
+        lead: 'linus',
+        members: ['mira', 'omar'],
+      },
+      {
+        name: 'Platform',
+        description: 'The database, the deploys, and whatever is on fire.',
+        lead: 'grace',
+        members: ['ada'],
+      },
+    ],
+  },
+  {
+    slug: 'northwind',
+    name: 'Northwind',
+    description: 'Freshly registered, nothing set up yet.',
+    location: 'Amsterdam',
+    website: 'https://northwind.example',
+    owner: 'grace',
+    staff: [],
+    departments: [],
+    teams: [],
+  },
+];
 
 const PEOPLE: SeedPerson[] = [
   {
@@ -71,6 +148,7 @@ const PEOPLE: SeedPerson[] = [
 const POSTS: SeedPost[] = [
   {
     author: 'ada',
+    type: 'content',
     direction: 'backend',
     title: 'Keyset pagination beats OFFSET every time',
     body: `Offset pagination looks harmless until the table grows.
@@ -99,6 +177,7 @@ the cursor where they belong instead of shuffling the ground under the reader.`,
   },
   {
     author: 'grace',
+    type: 'content',
     direction: 'backend',
     title: 'A repository is not an ORM wrapper',
     body: `The point of a repository is not to hide SQL. It is to keep the shape of your
@@ -114,6 +193,7 @@ about posts and users, not about entities.`,
   },
   {
     author: 'linus',
+    type: 'content',
     direction: 'frontend',
     title: 'Sanitize markdown, then render it',
     body: `Rendering user markdown without sanitizing it is how you hand your feed to
@@ -136,6 +216,7 @@ its contents, which is exactly what it is for.`,
   },
   {
     author: 'mira',
+    type: 'content',
     direction: 'design',
     title: 'Dark themes are not inverted light themes',
     body: `Flip the background and every carefully chosen colour goes wrong at once.
@@ -151,6 +232,7 @@ Contrast still has to clear 4.5:1. A dim interface is not an excuse for grey on 
   },
   {
     author: 'omar',
+    type: 'content',
     direction: 'qa',
     title: 'The bug report I want to receive',
     body: `Three lines is enough. What you did, what you expected, what happened instead.
@@ -162,6 +244,7 @@ direction.`,
   },
   {
     author: 'vera',
+    type: 'content',
     direction: 'hr',
     title: 'What a portfolio actually has to show',
     body: `Not that you can build a todo list. That you can finish something and explain
@@ -173,6 +256,7 @@ is the one that gets read twice.`,
   },
   {
     author: 'linus',
+    type: 'content',
     direction: 'frontend',
     title: 'Optimistic updates need a rollback plan',
     body: `Flipping a like counter before the request lands feels instant. It also lies
@@ -185,6 +269,7 @@ latency.`,
   },
   {
     author: 'ada',
+    type: 'content',
     direction: 'backend',
     title: 'Rotate refresh tokens or do not use them',
     body: `A refresh token that survives its own use is a password with a longer name.
@@ -196,6 +281,7 @@ the theft becomes visible instead of silent.`,
   },
   {
     author: 'grace',
+    type: 'content',
     direction: 'backend',
     title: 'Migrations, not synchronize',
     body: `Auto-syncing the schema in development teaches you nothing about the change you
@@ -207,6 +293,7 @@ it.`,
   },
   {
     author: 'mira',
+    type: 'content',
     direction: 'design',
     title: 'One accent colour is usually enough',
     body: `The second accent always arrives with a good reason and leaves the interface
@@ -218,6 +305,7 @@ let structure, spacing and weight carry the rest.`,
   },
   {
     author: 'omar',
+    type: 'content',
     direction: 'qa',
     title: 'Flaky tests are findings, not noise',
     body: `A test that passes nine times out of ten found a race. Retrying it until green
@@ -225,6 +313,7 @@ does not fix the race, it just moves the failure to a user.`,
   },
   {
     author: 'linus',
+    type: 'content',
     direction: 'frontend',
     title: 'URL is state you get for free',
     body: `Filters that live in component state disappear on refresh and cannot be sent to
@@ -242,6 +331,7 @@ sharing without a line of extra code.`,
   },
   {
     author: 'vera',
+    type: 'content',
     direction: 'hr',
     title: 'Take-home tasks should cost an evening, not a weekend',
     body: `If the task needs two days, the candidates who already have a job will decline and
@@ -251,6 +341,7 @@ Scope it to three hours and read the code, not the feature count.`,
   },
   {
     author: 'grace',
+    type: 'content',
     direction: 'backend',
     title: 'Idempotency is a feature, not a nicety',
     body: `A like that fires twice on a double click, a webhook that is delivered again, a retry
@@ -265,6 +356,7 @@ The database already knows how to say "already there". Let it.`,
   },
   {
     author: 'mira',
+    type: 'content',
     direction: 'design',
     title: 'Empty states are the first screen a new user sees',
     body: `And they usually get five minutes of design, at the very end, from whoever is left.
@@ -274,6 +366,7 @@ of a person looking at a cloud.`,
   },
   {
     author: 'linus',
+    type: 'content',
     direction: 'frontend',
     title: 'Skeletons or spinners',
     body: `A spinner says something is happening. A skeleton says what is about to appear and
@@ -284,6 +377,7 @@ glitch, not as feedback.`,
   },
   {
     author: 'omar',
+    type: 'content',
     direction: 'qa',
     title: 'Test the boundary, not the middle',
     body: `Nobody types a hundred characters into a field limited to a hundred and one. They type
@@ -293,6 +387,7 @@ That is four cases, and they find almost everything an off-by-one can hide.`,
   },
   {
     author: 'ada',
+    type: 'content',
     direction: 'backend',
     title: 'Every list endpoint needs a hard limit',
     body: `Not a default. A maximum.
@@ -306,6 +401,7 @@ limit: z.coerce.number().int().min(1).max(50).default(20),
   },
   {
     author: 'mira',
+    type: 'content',
     direction: 'design',
     title: 'Monospace is a voice, not a decoration',
     body: `Timestamps, counters, ids, keyboard shortcuts. Anything the eye should compare
@@ -316,6 +412,7 @@ as a screenshot of a terminal.`,
   },
   {
     author: 'grace',
+    type: 'content',
     direction: 'backend',
     title: 'The error shape is part of the contract',
     body: `If every endpoint invents its own failure payload, every client writes its own parser
@@ -326,6 +423,7 @@ code, never on the wording, so the wording stays free to change.`,
   },
   {
     author: 'linus',
+    type: 'content',
     direction: 'frontend',
     title: 'The barrel file that doubled my bundle',
     body: `A route loader imported one query helper from an entity barrel. The barrel also
@@ -340,6 +438,7 @@ already had.`,
   },
   {
     author: 'vera',
+    type: 'content',
     direction: 'hr',
     title: 'Say the salary range',
     body: `Both sides already have a number in mind. Naming yours first saves four interviews and
@@ -347,6 +446,7 @@ a conversation nobody enjoys.`,
   },
   {
     author: 'omar',
+    type: 'content',
     direction: 'qa',
     title: 'Reproduce before you fix',
     body: `A fix for a bug you never reproduced is a guess with a commit message.
@@ -356,6 +456,7 @@ something to prove.`,
   },
   {
     author: 'ada',
+    type: 'content',
     direction: 'backend',
     title: 'Transactions are about invariants, not about speed',
     body: `Registering a user creates a person and their first chat. Responding to a vacancy
@@ -364,7 +465,209 @@ creates an interaction, a notification for the author and a conversation.
 Half of any of those is not a slower result. It is a broken account somebody has to fix by
 hand.`,
   },
+  {
+    author: 'vera',
+    company: 'acme',
+    type: 'vacancy',
+    direction: 'frontend',
+    title: 'Senior frontend engineer, design systems',
+    body: `We keep a component library that four product teams build on, and it has
+outgrown the two people looking after it.
+
+You would own the parts everyone touches: tokens, theming, the primitives that every
+screen inherits. Expect to spend as much time reading other teams' code as writing
+your own.
+
+**What we look for**
+
+- React and TypeScript in production, not in a side project
+- An opinion about accessibility that survives a deadline
+- Patience for migrations that take a quarter
+
+Interviews are two conversations and one paid take-home. No whiteboard puzzles.`,
+    location: 'Berlin',
+    salaryMin: 85000,
+    salaryMax: 110000,
+    workFormat: 'hybrid',
+  },
+  {
+    author: 'vera',
+    company: 'acme',
+    type: 'vacancy',
+    direction: 'qa',
+    title: 'QA automation engineer, fully remote',
+    body: `Our end-to-end suite runs on Playwright and takes eleven minutes. We would
+like to keep it that way while the product doubles.
+
+The role is half engineering, half diplomacy: flaky tests are usually a product
+question wearing a testing costume, and someone has to go ask it.
+
+Salary is open — tell us what you are on now and what would make the move worth it.`,
+    location: null,
+    salaryMin: null,
+    salaryMax: null,
+    workFormat: 'remote',
+  },
+  {
+    author: 'mira',
+    type: 'event',
+    direction: 'design',
+    title: 'Design systems meetup, October',
+    body: `An evening of three talks and a long break in the middle, because the break
+is where the useful conversations happen.
+
+1. Naming tokens so they survive a rebrand
+2. What we got wrong migrating to a new icon set
+3. Auditing contrast without losing the brand
+
+Drinks after. Bring a laptop if you want to show something.`,
+    location: 'Amsterdam, Keizersgracht 12',
+    isPrivate: false,
+    participantLimit: 60,
+  },
+  {
+    author: 'grace',
+    type: 'event',
+    direction: 'backend',
+    title: 'Internal migration review, Postgres 18',
+    body: `Walking through the migration plan table by table, with the rollback path
+for each one.
+
+Come with the queries you are worried about. We will look at the plans together and
+decide what needs an index before we cut over.`,
+    location: null,
+    isPrivate: true,
+    participantLimit: null,
+  },
 ];
+
+const PROJECTS = [
+  {
+    team: 'Alpha',
+    name: 'Tokens, round two',
+    description: `The first pass named colours after the brand. This one names them after what
+they do, so a rebrand costs one file.
+
+Every token has to survive both themes before it ships.`,
+    startDate: '2026-09-01',
+    endDate: '2026-12-01',
+    tasks: [
+      {
+        author: 'linus',
+        assignee: 'mira',
+        direction: 'design',
+        title: 'Draw up the semantic layer',
+        body: 'One name per role, not per colour. Surface, ink, accent, danger. Two themes have to fall out of the same list.',
+        status: 'In Progress',
+        deadline: '2026-09-20T00:00:00.000Z',
+      },
+      {
+        author: 'linus',
+        assignee: 'linus',
+        direction: 'frontend',
+        title: 'Codemod the old token names',
+        body: 'Four hundred call sites. A script, a review, and a week where both names work.',
+        status: 'To Do',
+        deadline: null,
+      },
+      {
+        author: 'linus',
+        assignee: null,
+        direction: 'design',
+        title: 'Audit contrast in both themes',
+        body: 'AA everywhere, AAA on body text. Note anything that only just passes, so we know where the edge is.',
+        status: 'To Do',
+        deadline: null,
+      },
+      {
+        author: 'linus',
+        assignee: 'omar',
+        direction: 'qa',
+        title: 'Delete the old theme file',
+        body: 'It has been unreferenced for two weeks and nothing broke.',
+        status: 'Done',
+        deadline: null,
+      },
+    ],
+  },
+  {
+    team: 'Platform',
+    name: 'Postgres 18 cutover',
+    description:
+      'Table by table, with a rollback path written down before each one runs.',
+    startDate: '2026-09-05',
+    endDate: null,
+    tasks: [
+      {
+        author: 'grace',
+        assignee: 'grace',
+        direction: 'backend',
+        title: 'Write the rollback for every migration',
+        body: 'A down() that has never been run is a comment, not a rollback. Each one gets exercised on a copy.',
+        status: 'In Progress',
+        deadline: '2026-09-15T00:00:00.000Z',
+      },
+      {
+        author: 'grace',
+        assignee: null,
+        direction: 'qa',
+        title: 'Replay a day of traffic against the copy',
+        body: 'Same queries, new planner. We are looking for the plan that used to be an index scan.',
+        status: 'To Do',
+        deadline: null,
+      },
+      {
+        author: 'grace',
+        assignee: 'ada',
+        direction: 'backend',
+        title: 'Move the keyset indexes',
+        body: 'The feed pages on (createdAt, id). That pair needs its index before the cutover, not after.',
+        status: 'Done',
+        deadline: null,
+      },
+    ],
+  },
+] satisfies readonly {
+  team: string;
+  name: string;
+  description: string;
+  startDate: string | null;
+  endDate: string | null;
+  tasks: readonly {
+    author: string;
+    assignee: string | null;
+    direction: Speciality;
+    title: string;
+    body: string;
+    status: string;
+    deadline: string | null;
+  }[];
+}[];
+
+const FREE_TASKS = [
+  {
+    author: 'vera',
+    direction: 'design',
+    title: 'Redraw the empty states, three screens',
+    body: `Feed, search and the inbox. One voice across the three, and a line on each that
+says what to press.
+
+Small, paid, and the sort of thing that shows up in a portfolio.`,
+  },
+  {
+    author: 'omar',
+    direction: 'qa',
+    title: 'Write the first ten end-to-end cases',
+    body: `Playwright, one flow per case, no page objects until there are twenty.
+
+I have the flows written down. I do not have the evenings.`,
+  },
+] satisfies readonly {
+  author: string;
+  direction: Speciality;
+  title: string;
+  body: string;
+}[];
 
 const seed = async () => {
   const context = await NestFactory.createApplicationContext(AppModule, {
@@ -373,6 +676,12 @@ const seed = async () => {
 
   const users = context.get(UsersService);
   const posts = context.get(PostsService, { strict: false });
+  const companies = context.get(CompaniesService, { strict: false });
+  const companyRows = context.get(CompaniesRepository, { strict: false });
+  const departments = context.get(DepartmentsService, { strict: false });
+  const teams = context.get(TeamsService, { strict: false });
+  const invites = context.get(InvitesService, { strict: false });
+  const projects = context.get(ProjectsService, { strict: false });
   const dataSource = context.get(DataSource);
 
   const rows = await dataSource.query<{ count: number }[]>(
@@ -387,7 +696,7 @@ const seed = async () => {
   }
 
   const passwordHash = await argon2.hash(PASSWORD);
-  const ids = new Map<string, string>();
+  const people = new Map<string, User>();
 
   for (const person of PEOPLE) {
     const existing = await users.findByNickname(person.nickname);
@@ -403,20 +712,133 @@ const seed = async () => {
         role: roleForSpeciality(person.speciality),
       }));
 
-    ids.set(person.nickname, user.id);
+    people.set(person.nickname, user);
   }
+
+  const person = (nickname: string) => {
+    const user = people.get(nickname);
+    if (!user) throw new Error(`Unknown seed person: ${nickname}`);
+    return user;
+  };
+
+  const join = async (
+    inviter: User,
+    invitee: User,
+    target: Parameters<InvitesService['invite']>[0],
+    role: Exclude<CompanyRole, 'owner'> = 'employee',
+  ) => {
+    const invite = await invites.invite(target, inviter, {
+      nickname: invitee.nickname,
+      role,
+    });
+
+    await invites.decide(invite.id, invitee, 'accepted');
+  };
+
+  for (const draft of COMPANIES) {
+    if (await companyRows.findBySlug(draft.slug)) continue;
+
+    const owner = person(draft.owner);
+    const company = await companies.create(owner, {
+      slug: draft.slug,
+      name: draft.name,
+      description: draft.description,
+      location: draft.location,
+      website: draft.website,
+      logoUrl: null,
+      socialLinks: [],
+    });
+
+    for (const { nickname, role } of draft.staff) {
+      await join(
+        owner,
+        person(nickname),
+        { scope: 'company', companyId: company.id },
+        role,
+      );
+    }
+
+    for (const draftDepartment of draft.departments) {
+      const department = await departments.create(company.id, owner, {
+        name: draftDepartment.name,
+        managerId: person(draftDepartment.manager).id,
+      });
+
+      for (const nickname of draftDepartment.members) {
+        await join(owner, person(nickname), {
+          scope: 'department',
+          companyId: company.id,
+          departmentId: department.id,
+        });
+      }
+    }
+
+    for (const draftTeam of draft.teams) {
+      const lead = person(draftTeam.lead);
+      const team = await teams.create(lead, {
+        name: draftTeam.name,
+        description: draftTeam.description,
+        companyId: company.id,
+      });
+
+      for (const nickname of draftTeam.members) {
+        await join(lead, person(nickname), {
+          scope: 'team',
+          teamId: team.id,
+        });
+      }
+
+      for (const draftProject of PROJECTS.filter(
+        (item) => item.team === draftTeam.name,
+      )) {
+        const project = await projects.create(lead, {
+          teamId: team.id,
+          name: draftProject.name,
+          description: draftProject.description,
+          startDate: draftProject.startDate,
+          endDate: draftProject.endDate,
+          attachments: [],
+        });
+
+        for (const task of draftProject.tasks) {
+          const created = await posts.create(person(task.author).id, {
+            type: 'task',
+            direction: task.direction,
+            title: task.title,
+            body: task.body,
+            companyId: null,
+            projectId: project.id,
+            deadline: task.deadline,
+            status: task.status,
+            isPrivate: true,
+            attachments: [],
+          });
+
+          if (task.assignee) {
+            await posts.assign(created.id, lead, person(task.assignee).id);
+          }
+        }
+      }
+    }
+  }
+
+  const ken = person('omar');
+  const weekend = await teams.create(ken, {
+    name: 'Weekend hack',
+    description: 'Two evenings, one prototype, nobody in charge on Monday.',
+    companyId: undefined,
+  });
+  await join(ken, person('mira'), { scope: 'team', teamId: weekend.id });
 
   const hourInMs = 60 * 60 * 1000;
   let createdAt = Date.now() - POSTS.length * 5 * hourInMs;
 
-  for (const draft of POSTS) {
-    const authorId = ids.get(draft.author);
-    if (!authorId) throw new Error(`Unknown seed author: ${draft.author}`);
+  for (const { author, company, ...draft } of POSTS) {
+    const employer = company ? await companyRows.findBySlug(company) : null;
 
-    const post = await posts.create(authorId, {
-      direction: draft.direction,
-      title: draft.title,
-      body: draft.body,
+    const post = await posts.create(person(author).id, {
+      ...draft,
+      companyId: employer?.id ?? null,
     });
 
     await dataSource.query(
@@ -427,8 +849,31 @@ const seed = async () => {
     createdAt += 5 * hourInMs;
   }
 
+  for (const draft of FREE_TASKS) {
+    const post = await posts.create(person(draft.author).id, {
+      type: 'task',
+      direction: draft.direction,
+      title: draft.title,
+      body: draft.body,
+      companyId: null,
+      projectId: null,
+      deadline: null,
+      status: DEFAULT_STATUS,
+      isPrivate: false,
+      attachments: [],
+    });
+
+    createdAt += hourInMs;
+    await dataSource.query(
+      'update posts set "createdAt" = $1, "updatedAt" = $1 where id = $2',
+      [new Date(createdAt), post.id],
+    );
+  }
+
   console.log(
-    `seeded ${PEOPLE.length} users (password ${PASSWORD}) and ${POSTS.length} posts`,
+    `seeded ${PEOPLE.length} users (password ${PASSWORD}), ` +
+      `${COMPANIES.length} companies, ${PROJECTS.length} projects and ` +
+      `${POSTS.length + FREE_TASKS.length} posts`,
   );
 
   await context.close();

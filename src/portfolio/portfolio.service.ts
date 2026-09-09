@@ -3,48 +3,48 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { CreateProjectDto } from './dto/create-project.dto';
-import type { UpdateProjectDto } from './dto/update-project.dto';
+import type { CreatePortfolioItemDto } from './dto/create-portfolio-item.dto';
+import type { UpdatePortfolioItemDto } from './dto/update-portfolio-item.dto';
 import { PortfolioRepository } from './portfolio.repository';
 
 @Injectable()
 export class PortfolioService {
-  constructor(private readonly projects: PortfolioRepository) {}
+  constructor(private readonly items: PortfolioRepository) {}
 
   list(userId: string) {
-    return this.projects.findByUser(userId);
+    return this.items.findByUser(userId);
   }
 
-  async findById(userId: string, projectId: string) {
-    const project = await this.projects.findById(projectId);
+  async findById(userId: string, itemId: string) {
+    const item = await this.items.findById(itemId);
 
-    if (!project || project.author.id !== userId) {
-      throw new NotFoundException('Project not found');
+    if (!item || item.author.id !== userId) {
+      throw new NotFoundException('PortfolioItem not found');
     }
 
-    return project;
+    return item;
   }
 
-  create(userId: string, viewerId: string, dto: CreateProjectDto) {
+  create(userId: string, viewerId: string, dto: CreatePortfolioItemDto) {
     this.requireOwner(userId, viewerId);
-    return this.projects.create({ userId, ...dto });
+    return this.items.create({ userId, ...dto });
   }
 
   async update(
     userId: string,
     viewerId: string,
-    projectId: string,
-    dto: UpdateProjectDto,
+    itemId: string,
+    dto: UpdatePortfolioItemDto,
   ) {
     this.requireOwner(userId, viewerId);
-    await this.findById(userId, projectId);
-    return this.projects.update(projectId, dto);
+    await this.findById(userId, itemId);
+    return this.items.update(itemId, dto);
   }
 
-  async remove(userId: string, viewerId: string, projectId: string) {
+  async remove(userId: string, viewerId: string, itemId: string) {
     this.requireOwner(userId, viewerId);
-    await this.findById(userId, projectId);
-    await this.projects.delete(projectId);
+    await this.findById(userId, itemId);
+    await this.items.delete(itemId);
   }
 
   private requireOwner(userId: string, viewerId: string) {

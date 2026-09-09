@@ -1,7 +1,7 @@
 import { toUser } from '../../../users/infra/postgres/user.mapper';
-import type { ProjectEntity } from './project.entity';
+import type { PortfolioItemEntity } from './portfolio-item.entity';
 
-export const toProject = (entity: ProjectEntity) => ({
+export const toPortfolioItem = (entity: PortfolioItemEntity) => ({
   id: entity.id,
   title: entity.title,
   ...(entity.description ? { description: entity.description } : {}),
