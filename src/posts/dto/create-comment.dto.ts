@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { MESSAGE_LIMIT } from '../../chats/dto/create-message.dto';
 
 export const createCommentSchema = z.object({
+  id: z.uuid().optional(),
   body: z
     .string()
     .trim()
