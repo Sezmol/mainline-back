@@ -5,6 +5,7 @@ export const MESSAGE_LIMIT = 4000;
 
 export const createMessageSchema = z
   .object({
+    id: z.uuid().optional(),
     body: z
       .string()
       .trim()

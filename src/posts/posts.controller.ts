@@ -268,6 +268,6 @@ export class PostsController {
     @CurrentUser() user: User,
     @Body() dto: CreateCommentDto,
   ) {
-    return toMessageDto(await this.posts.comment(id, user, dto.body));
+    return toMessageDto(await this.posts.comment(id, user, dto));
   }
 }

@@ -10,6 +10,7 @@ import type { User } from '../../../users/users.types';
 import { ChatsRepository } from '../../chats.repository';
 import {
   ChatExistsError,
+  MessageExistsError,
   MissingPostError,
   type Chat,
   type ChatListItem,
@@ -196,9 +197,11 @@ export class ChatTypeormRepository extends ChatsRepository {
 
     let id: string;
     try {
-      ({ id } = await messages.save(messages.create(input)));
+      const { identifiers } = await messages.insert(messages.create(input));
+      ({ id } = identifiers[0] as { id: string });
     } catch (error) {
       if (asForeignKeyViolation(error)) throw new MissingPostError();
+      if (asUniqueViolation(error)) throw new MessageExistsError();
       throw error;
     }
 
