@@ -123,7 +123,11 @@ export class PostsService {
     return chat;
   }
 
-  async comment(postId: string, author: User, body: string) {
+  async comment(
+    postId: string,
+    author: User,
+    input: { id?: string; body: string },
+  ) {
     const post = await this.findById(postId, author.id);
 
     if (post.type !== 'content') {
@@ -133,7 +137,7 @@ export class PostsService {
     const chat = await this.chats.ensureContentChat(post.id, post.author.id);
     await this.chats.join(chat, author.id);
 
-    return this.chats.send(chat.id, author, { body });
+    return this.chats.send(chat.id, author, input);
   }
 
   async update(id: string, authorId: string, dto: UpdatePostDto) {

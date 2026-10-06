@@ -71,6 +71,7 @@ export interface CreateChatInput {
 }
 
 export interface CreateMessageInput {
+  id?: string;
   chatId: string;
   authorId: string;
   body: string;
@@ -102,5 +103,12 @@ export class MissingPostError extends Error {
   constructor() {
     super('The attached post does not exist');
     this.name = 'MissingPostError';
+  }
+}
+
+export class MessageExistsError extends Error {
+  constructor() {
+    super('A message with this id already exists');
+    this.name = 'MessageExistsError';
   }
 }

@@ -14,6 +14,7 @@ import { ChatEventsPublisher } from './chat-events.publisher';
 import { ChatsRepository } from './chats.repository';
 import {
   ChatExistsError,
+  MessageExistsError,
   MissingPostError,
   type Chat,
   type ChatListItem,
@@ -387,7 +388,7 @@ export class ChatsService {
   async send(
     chatId: string,
     author: User,
-    input: { body: string; postId?: string },
+    input: { id?: string; body: string; postId?: string },
   ) {
     const { chat, membership } = await this.requireMembership(
       chatId,
@@ -412,8 +413,25 @@ export class ChatsService {
       if (error instanceof MissingPostError) {
         throw AppException.validation('That post does not exist');
       }
+      if (error instanceof MessageExistsError && input.id) {
+        return this.findResentMessage(chatId, author.id, input.id);
+      }
       throw error;
     }
+  }
+
+  private async findResentMessage(
+    chatId: string,
+    authorId: string,
+    id: string,
+  ) {
+    const message = await this.chats.findMessage(chatId, id);
+
+    if (message?.author.id !== authorId) {
+      throw AppException.conflict('This message id is already taken');
+    }
+
+    return message;
   }
 
   async saveToFavorites(postId: string, user: User) {
