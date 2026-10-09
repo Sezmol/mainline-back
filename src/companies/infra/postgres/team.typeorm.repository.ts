@@ -12,7 +12,6 @@ import {
 import { TeamsRepository } from '../../teams.repository';
 import type {
   CreateTeamInput,
-  Team,
   TeamMember,
   UpdateTeamInput,
 } from '../../teams.types';
@@ -33,7 +32,7 @@ interface ChatRow {
   chatId: string;
 }
 
-const toTeam = (entity: TeamEntity): Team => ({
+const toTeam = (entity: TeamEntity) => ({
   id: entity.id,
   companyId: entity.companyId,
   companySlug: entity.company?.slug ?? null,

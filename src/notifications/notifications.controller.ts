@@ -5,11 +5,11 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PageQueryDto } from '../common/pagination/page-query.dto';
 import { toPublicUser } from '../users/dto/user.dto';
 import type { User } from '../users/users.types';
-import { NotificationDto, NotificationPageDto } from './dto/notification.dto';
+import { NotificationPageDto } from './dto/notification.dto';
 import { NotificationsService } from './notifications.service';
 import type { Notification } from './notifications.types';
 
-const toNotificationDto = (notification: Notification): NotificationDto => ({
+const toNotificationDto = (notification: Notification) => ({
   id: notification.id,
   type: notification.type,
   actor: notification.actor ? toPublicUser(notification.actor) : null,

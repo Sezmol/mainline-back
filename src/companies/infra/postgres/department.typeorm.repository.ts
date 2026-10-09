@@ -21,7 +21,7 @@ interface MemberCountRow {
   count: number;
 }
 
-const toDepartment = (entity: DepartmentEntity): Department => ({
+const toDepartment = (entity: DepartmentEntity) => ({
   id: entity.id,
   companyId: entity.companyId,
   name: entity.name,

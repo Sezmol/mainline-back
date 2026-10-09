@@ -44,11 +44,11 @@ export const projectSchema = z.object({
 
 export class ProjectDto extends createZodDto(projectSchema) {}
 
-export const toProjectDto = (project: Project): ProjectDto => ({
+export const toProjectDto = (project: Project) => ({
   ...project,
   manager: toPublicUser(project.manager),
   createdAt: project.createdAt.toISOString(),
   updatedAt: project.updatedAt.toISOString(),
 });
 
-export const toBoardColumnDto = (column: BoardColumn): BoardColumnDto => column;
+export const toBoardColumnDto = (column: BoardColumn) => column;

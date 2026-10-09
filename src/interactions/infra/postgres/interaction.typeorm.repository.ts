@@ -8,7 +8,6 @@ import { InteractionsRepository } from '../../interactions.repository';
 import {
   InteractionExistsError,
   type CreateInteractionInput,
-  type Interaction,
 } from '../../interactions.types';
 import { InteractionEntity } from './interaction.entity';
 import { toInteraction } from './interaction.mapper';
@@ -44,10 +43,7 @@ export class InteractionTypeormRepository extends InteractionsRepository {
     return found.map(toInteraction);
   }
 
-  async findByPostAndUser(
-    postId: string,
-    userId: string,
-  ): Promise<Interaction | null> {
+  async findByPostAndUser(postId: string, userId: string) {
     const found = await this.interactions.findOne({
       where: { postId, userId },
       relations: { user: true },

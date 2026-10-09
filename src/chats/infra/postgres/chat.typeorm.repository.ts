@@ -12,13 +12,11 @@ import {
   ChatExistsError,
   MessageExistsError,
   MissingPostError,
-  type Chat,
   type ChatListItem,
   type CreateChatInput,
   type CreateMessageInput,
   type FindChatsQuery,
   type FindMessagesQuery,
-  type Membership,
 } from '../../chats.types';
 import { ChatParticipantEntity } from './chat-participant.entity';
 import { ChatEntity } from './chat.entity';
@@ -76,7 +74,7 @@ export class ChatTypeormRepository extends ChatsRepository {
     return toChat(saved);
   }
 
-  async findById(id: string): Promise<Chat | null> {
+  async findById(id: string) {
     const found = await this.chats.findOne({
       where: { id },
       relations: CHAT_RELATIONS,
@@ -160,7 +158,7 @@ export class ChatTypeormRepository extends ChatsRepository {
     chatId: string,
     userId: string,
     manager?: EntityManager,
-  ): Promise<Membership | null> {
+  ) {
     const found = await this.participantRepository(manager).findOne({
       where: { chatId, userId },
     });

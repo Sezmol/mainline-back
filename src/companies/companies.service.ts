@@ -7,7 +7,7 @@ import { toPage } from '../common/pagination/cursor';
 import type { User } from '../users/users.types';
 import { DEFAULT_DEPARTMENT_NAME } from './companies.constants';
 import { CompaniesRepository } from './companies.repository';
-import { SlugTakenError, type CompanyPage } from './companies.types';
+import { SlugTakenError } from './companies.types';
 import { companyAccess } from './company-access';
 import { CompanyContextService } from './company-context.service';
 import { DepartmentsRepository } from './departments.repository';
@@ -80,7 +80,7 @@ export class CompaniesService extends CompanyContextService {
     }
   }
 
-  async page(slug: string, viewerId?: string): Promise<CompanyPage> {
+  async page(slug: string, viewerId?: string) {
     const company = await this.companies.findBySlug(slug.toLowerCase());
     if (!company) throw new NotFoundException('Company not found');
 

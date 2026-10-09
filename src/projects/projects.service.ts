@@ -342,7 +342,7 @@ export class ProjectsService {
     return `${title.slice(0, 50)} team`;
   }
 
-  private assert(allowed: boolean, message: string): void {
+  private assert(allowed: boolean, message: string) {
     if (!allowed) throw new ForbiddenException(message);
   }
 

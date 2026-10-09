@@ -35,8 +35,6 @@ export const notificationSchema = z.object({
   createdAt: z.iso.datetime(),
 });
 
-export class NotificationDto extends createZodDto(notificationSchema) {}
-
 export const notificationPageSchema = z.object({
   items: z.array(notificationSchema),
   nextCursor: z.string().nullable(),

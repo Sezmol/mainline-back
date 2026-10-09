@@ -9,7 +9,6 @@ import type {
   CreatePostInput,
   FindLikesQuery,
   FindPostsQuery,
-  Post,
   PostDetails,
   UpdatePostInput,
 } from '../../posts.types';
@@ -141,7 +140,7 @@ export class PostTypeormRepository extends PostsRepository {
     return this.posts.existsBy({ id });
   }
 
-  async findById(id: string, viewerId: string): Promise<Post | null> {
+  async findById(id: string, viewerId: string) {
     const found = await this.posts.findOne({
       where: { id },
       relations: { author: true, company: true },

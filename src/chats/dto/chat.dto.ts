@@ -23,7 +23,7 @@ export const chatSchema = z.object({
 
 export class ChatDto extends createZodDto(chatSchema) {}
 
-export const toChatDto = (chat: Chat): ChatDto => ({
+export const toChatDto = (chat: Chat) => ({
   id: chat.id,
   type: chat.type,
   post: chat.post,
@@ -46,7 +46,7 @@ export const messageSchema = z.object({
 
 export class MessageDto extends createZodDto(messageSchema) {}
 
-export const toMessageDto = (message: Message): MessageDto => ({
+export const toMessageDto = (message: Message) => ({
   id: message.id,
   chatId: message.chatId,
   author: toPublicUser(message.author),
@@ -74,7 +74,7 @@ export const chatViewSchema = z.object({
 
 export class ChatViewDto extends createZodDto(chatViewSchema) {}
 
-export const toChatViewDto = (view: ChatView): ChatViewDto => ({
+export const toChatViewDto = (view: ChatView) => ({
   chat: toChatDto(view.chat),
   companion: view.companion ? toPublicUser(view.companion) : null,
   lastMessage: view.lastMessage ? toMessageDto(view.lastMessage) : null,

@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { PortfolioRepository } from '../../portfolio.repository';
 import type {
   CreatePortfolioItemInput,
-  PortfolioItem,
   UpdatePortfolioItemInput,
 } from '../../portfolio.types';
 import { PortfolioItemEntity } from './portfolio-item.entity';
@@ -29,7 +28,7 @@ export class PortfolioItemTypeormRepository extends PortfolioRepository {
     return found.map(toPortfolioItem);
   }
 
-  async findById(id: string): Promise<PortfolioItem | null> {
+  async findById(id: string) {
     const found = await this.items.findOne({
       where: { id },
       relations: { user: true },
