@@ -87,3 +87,10 @@ export class TeamExistsError extends Error {
     this.name = 'TeamExistsError';
   }
 }
+
+export class TeamMemberExistsError extends Error {
+  constructor() {
+    super('This person is already in the team');
+    this.name = 'TeamMemberExistsError';
+  }
+}

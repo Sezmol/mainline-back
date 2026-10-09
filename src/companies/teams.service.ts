@@ -4,11 +4,10 @@ import { DataSource, type EntityManager } from 'typeorm';
 import { ChatEventsPublisher } from '../chats/chat-events.publisher';
 import { ChatsService } from '../chats/chats.service';
 import { AppException } from '../common/errors/app.exception';
-import { asUniqueViolation } from '../infra/database/unique-violation';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { User } from '../users/users.types';
 import { CompaniesRepository } from './companies.repository';
-import { TeamExistsError } from './companies.types';
+import { TeamExistsError, TeamMemberExistsError } from './companies.types';
 import { companyAccess, teamAccess } from './company-access';
 import { CompanyContextService } from './company-context.service';
 import type { CreateTeamDto, UpdateTeamDto } from './dto/team.dto';
@@ -191,7 +190,7 @@ export class TeamsService extends CompanyContextService {
     try {
       await this.teams.addMember(teamId, userId, manager);
     } catch (error) {
-      if (asUniqueViolation(error)) {
+      if (error instanceof TeamMemberExistsError) {
         throw AppException.conflict('This person is already in the team');
       }
       throw error;

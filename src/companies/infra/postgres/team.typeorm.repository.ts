@@ -4,7 +4,11 @@ import { In, Repository, type EntityManager } from 'typeorm';
 import type { CompanyRole } from '../../../common/domain/directory';
 import { asUniqueViolation } from '../../../infra/database/unique-violation';
 import { toUser } from '../../../users/infra/postgres/user.mapper';
-import { TeamExistsError, type ContainerRef } from '../../companies.types';
+import {
+  TeamExistsError,
+  TeamMemberExistsError,
+  type ContainerRef,
+} from '../../companies.types';
 import { TeamsRepository } from '../../teams.repository';
 import type {
   CreateTeamInput,
@@ -162,7 +166,13 @@ export class TeamTypeormRepository extends TeamsRepository {
 
   async addMember(teamId: string, userId: string, manager: EntityManager) {
     const repo = manager.getRepository(TeamMemberEntity);
-    await repo.save(repo.create({ teamId, userId }));
+
+    try {
+      await repo.save(repo.create({ teamId, userId }));
+    } catch (error) {
+      if (asUniqueViolation(error)) throw new TeamMemberExistsError();
+      throw error;
+    }
   }
 
   async removeMember(teamId: string, userId: string, manager: EntityManager) {
