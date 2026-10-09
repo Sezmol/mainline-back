@@ -148,7 +148,7 @@ export class CompanyTypeormRepository extends CompaniesRepository {
       .where('member.companyId = :companyId', { companyId })
       .orderBy('member.joinedAt', 'ASC')
       .addOrderBy('member.userId', 'ASC')
-      .take(limit);
+      .limit(limit);
 
     if (cursor) {
       query.andWhere(

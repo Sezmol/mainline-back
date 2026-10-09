@@ -109,7 +109,7 @@ export class ChatTypeormRepository extends ChatsRepository {
       )
       .orderBy('chat.lastMessageAt', 'DESC')
       .addOrderBy('chat.id', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (type) query.andWhere('chat.type = :type', { type });
 
@@ -261,7 +261,7 @@ export class ChatTypeormRepository extends ChatsRepository {
       .where('message.chatId = :chatId', { chatId })
       .orderBy('message.createdAt', 'DESC')
       .addOrderBy('message.id', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (cursor) {
       query.andWhere(
