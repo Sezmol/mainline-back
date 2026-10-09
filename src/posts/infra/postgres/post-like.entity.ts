@@ -29,6 +29,6 @@ export class PostLikeEntity {
   @JoinColumn({ name: 'postId' })
   post!: PostEntity;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   createdAt!: Date;
 }

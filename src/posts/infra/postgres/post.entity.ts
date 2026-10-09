@@ -128,7 +128,7 @@ export class PostEntity {
   assignedUsers?: UserEntity[];
   projectName?: string | null;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   createdAt!: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })
