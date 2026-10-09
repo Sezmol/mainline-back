@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -11,7 +10,7 @@ import { ChatsService } from '../chats/chats.service';
 import { CompanyMemberEntity } from '../companies/infra/postgres/company-member.entity';
 import { TeamMemberEntity } from '../companies/infra/postgres/team-member.entity';
 import { DEFAULT_COLUMNS } from '../common/domain/directory';
-import { decodeCursor, encodeCursor } from '../common/pagination/cursor';
+import { toPage } from '../common/pagination/cursor';
 import { AppException } from '../common/errors/app.exception';
 import { NotificationsService } from '../notifications/notifications.service';
 import { projectAccess } from '../projects/project-access';
@@ -58,9 +57,6 @@ export class PostsService {
     }: PostsQueryDto,
     viewerId: string,
   ) {
-    const decoded = cursor ? decodeCursor(cursor) : null;
-    if (cursor && !decoded) throw new BadRequestException('Invalid cursor');
-
     if (projectId) await this.requireBoardAccess(projectId, viewerId);
 
     const found = await this.posts.findMany({
@@ -70,17 +66,11 @@ export class PostsService {
       ...(companyId ? { companyId } : {}),
       ...(projectId ? { projectId } : {}),
       ...(scope ? { scope } : {}),
-      ...(decoded ? { cursor: decoded } : {}),
+      ...(cursor ? { cursor } : {}),
       limit: limit + 1,
     });
 
-    const items = found.slice(0, limit);
-    const last = items.at(-1);
-
-    return {
-      items,
-      nextCursor: found.length > limit && last ? encodeCursor(last) : null,
-    };
+    return toPage(found, limit, (post) => post);
   }
 
   async findById(id: string, viewerId: string) {
@@ -275,24 +265,20 @@ export class PostsService {
   ) {
     await this.findById(id, viewerId);
 
-    const decoded = cursor ? decodeCursor(cursor) : null;
-    if (cursor && !decoded) throw new BadRequestException('Invalid cursor');
-
     const found = await this.posts.findLikes({
       postId: id,
-      ...(decoded ? { cursor: decoded } : {}),
+      ...(cursor ? { cursor } : {}),
       limit: limit + 1,
     });
 
-    const items = found.slice(0, limit);
-    const last = items.at(-1);
+    const page = toPage(found, limit, (like) => ({
+      createdAt: like.createdAt,
+      id: like.user.id,
+    }));
 
     return {
-      items: items.map((like) => like.user),
-      nextCursor:
-        found.length > limit && last
-          ? encodeCursor({ createdAt: last.createdAt, id: last.user.id })
-          : null,
+      items: page.items.map((like) => like.user),
+      nextCursor: page.nextCursor,
     };
   }
 

@@ -6,7 +6,7 @@ import {
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, type EntityManager } from 'typeorm';
 import { AppException } from '../common/errors/app.exception';
-import { decodeCursor } from '../common/pagination/cursor';
+import { toPage, type Cursor } from '../common/pagination/cursor';
 import { AfterCommit } from '../infra/database/after-commit';
 import { UsersService } from '../users/users.service';
 import type { GroupChatType } from '../common/domain/directory';
@@ -26,7 +26,7 @@ import { dedupeKey } from './dedupe-key';
 import type { ChatListQueryDto } from './dto/chat-queries.dto';
 
 interface Page {
-  cursor?: string;
+  cursor?: Cursor;
   limit: number;
 }
 
@@ -358,14 +358,19 @@ export class ChatsService {
   }
 
   async list(userId: string, query: ChatListQueryDto) {
-    const items = await this.chats.findMany({
+    const found = await this.chats.findMany({
       userId,
       archived: query.archived,
       ...(query.type ? { type: query.type } : {}),
-      ...this.page(query),
+      ...(query.cursor ? { cursor: query.cursor } : {}),
+      limit: query.limit + 1,
     });
 
-    return items.map((item) => this.toView(item));
+    return toPage(
+      found.map((item) => this.toView(item)),
+      query.limit,
+      (view) => ({ createdAt: view.chat.lastMessageAt, id: view.chat.id }),
+    );
   }
 
   async findById(chatId: string, viewerId: string) {
@@ -388,7 +393,7 @@ export class ChatsService {
     return this.chats.findParticipants(chatId);
   }
 
-  async messages(chatId: string, viewerId: string, query: Page) {
+  async messages(chatId: string, viewerId: string, { cursor, limit }: Page) {
     const chat = await this.chats.findById(chatId);
     if (!chat) throw new NotFoundException('Chat not found');
 
@@ -396,7 +401,13 @@ export class ChatsService {
       await this.requireMembership(chatId, viewerId);
     }
 
-    return this.chats.findMessages({ chatId, ...this.page(query) });
+    const found = await this.chats.findMessages({
+      chatId,
+      ...(cursor ? { cursor } : {}),
+      limit: limit + 1,
+    });
+
+    return toPage(found, limit, (message) => message);
   }
 
   async send(
@@ -592,16 +603,6 @@ export class ChatsService {
     }
 
     return { chat, membership };
-  }
-
-  private page({ cursor, limit }: Page) {
-    const decoded = cursor ? decodeCursor(cursor) : null;
-
-    if (cursor && !decoded) {
-      throw AppException.validation('That page cursor is not readable');
-    }
-
-    return { limit, ...(decoded ? { cursor: decoded } : {}) };
   }
 
   private async ensure(input: CreateChatInput, manager?: EntityManager) {
