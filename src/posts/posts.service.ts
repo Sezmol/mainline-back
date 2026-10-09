@@ -249,7 +249,7 @@ export class PostsService {
   }
 
   async like(id: string, userId: string) {
-    await this.requireExists(id);
+    await this.findById(id, userId);
     await this.posts.like(id, userId);
   }
 
@@ -259,7 +259,7 @@ export class PostsService {
   }
 
   async save(id: string, user: User) {
-    await this.requireExists(id);
+    await this.findById(id, user.id);
     return this.chats.saveToFavorites(id, user);
   }
 
@@ -268,8 +268,12 @@ export class PostsService {
     await this.chats.removeFromFavorites(id, userId);
   }
 
-  async findLikePage(id: string, { cursor, limit }: PageQueryDto) {
-    await this.requireExists(id);
+  async findLikePage(
+    id: string,
+    viewerId: string,
+    { cursor, limit }: PageQueryDto,
+  ) {
+    await this.findById(id, viewerId);
 
     const decoded = cursor ? decodeCursor(cursor) : null;
     if (cursor && !decoded) throw new BadRequestException('Invalid cursor');

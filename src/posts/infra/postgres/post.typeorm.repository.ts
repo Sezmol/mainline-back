@@ -169,7 +169,7 @@ export class PostTypeormRepository extends PostsRepository {
       .leftJoinAndSelect('post.company', 'company')
       .orderBy('post.createdAt', 'DESC')
       .addOrderBy('post.id', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (type) query.andWhere('post.type = :type', { type });
     if (direction) query.andWhere('post.direction = :direction', { direction });
@@ -283,7 +283,7 @@ export class PostTypeormRepository extends PostsRepository {
       .where('postLike.postId = :postId', { postId })
       .orderBy('postLike.createdAt', 'DESC')
       .addOrderBy('postLike.userId', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (cursor) {
       query.andWhere(

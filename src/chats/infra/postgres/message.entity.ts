@@ -43,7 +43,7 @@ export class MessageEntity {
   @JoinColumn({ name: 'postId' })
   post!: PostEntity | null;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   createdAt!: Date;
 
   @Column({ type: 'timestamptz', nullable: true })

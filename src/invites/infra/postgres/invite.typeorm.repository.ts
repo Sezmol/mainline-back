@@ -73,22 +73,25 @@ export class InviteTypeormRepository extends InvitesRepository {
     return found.map(toInvite);
   }
 
-  async setStatus(
+  async answer(
     id: string,
     status: 'accepted' | 'declined',
     manager: EntityManager,
   ) {
-    await manager
+    const { affected } = await manager
       .getRepository(InviteEntity)
-      .update(id, { status, decidedAt: new Date() });
+      .update({ id, status: 'pending' }, { status, decidedAt: new Date() });
+
+    if (!affected) return null;
 
     const updated = await this.findById(id, manager);
     if (!updated) throw new Error(`Invite ${id} vanished right after a write`);
     return updated;
   }
 
-  async delete(id: string) {
-    await this.invites.delete(id);
+  async deletePending(id: string) {
+    const { affected } = await this.invites.delete({ id, status: 'pending' });
+    return (affected ?? 0) > 0;
   }
 
   private repo(manager?: EntityManager) {

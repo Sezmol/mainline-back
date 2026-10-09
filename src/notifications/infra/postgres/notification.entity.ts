@@ -66,6 +66,6 @@ export class NotificationEntity {
   @Column({ type: 'timestamptz', nullable: true })
   readAt!: Date | null;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   createdAt!: Date;
 }

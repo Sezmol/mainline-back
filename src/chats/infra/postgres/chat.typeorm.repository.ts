@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Repository, type EntityManager } from 'typeorm';
+import { In, IsNull, Not, Repository, type EntityManager } from 'typeorm';
 import {
   asForeignKeyViolation,
   asUniqueViolation,
@@ -109,7 +109,7 @@ export class ChatTypeormRepository extends ChatsRepository {
       )
       .orderBy('chat.lastMessageAt', 'DESC')
       .addOrderBy('chat.id', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (type) query.andWhere('chat.type = :type', { type });
 
@@ -176,20 +176,23 @@ export class ChatTypeormRepository extends ChatsRepository {
   ) {
     const participants = manager.getRepository(ChatParticipantEntity);
 
-    await participants
+    const inserted = await participants
       .createQueryBuilder()
       .insert()
       .values({ chatId, userId })
       .orIgnore()
+      .returning('"userId"')
       .execute();
 
-    if (revive) {
-      await participants.update({ chatId, userId }, { removedAt: null });
-    }
+    if ((inserted.raw as unknown[]).length > 0) return true;
+    if (!revive) return false;
 
-    const saved = await participants.findOne({ where: { chatId, userId } });
-    if (!saved) throw new Error(`Participant ${userId} vanished after a write`);
-    return toMembership(saved);
+    const { affected } = await participants.update(
+      { chatId, userId, removedAt: Not(IsNull()) },
+      { removedAt: null },
+    );
+
+    return (affected ?? 0) > 0;
   }
 
   async createMessage(input: CreateMessageInput, manager: EntityManager) {
@@ -258,7 +261,7 @@ export class ChatTypeormRepository extends ChatsRepository {
       .where('message.chatId = :chatId', { chatId })
       .orderBy('message.createdAt', 'DESC')
       .addOrderBy('message.id', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (cursor) {
       query.andWhere(
@@ -277,7 +280,7 @@ export class ChatTypeormRepository extends ChatsRepository {
       .update()
       .set({
         lastReadAt: () =>
-          '(select "createdAt" from "messages" where "id" = :messageId)',
+          'GREATEST("lastReadAt", (select "createdAt" from "messages" where "id" = :messageId and "chatId" = :chatId))',
       })
       .where('"chatId" = :chatId and "userId" = :userId')
       .setParameters({ chatId, userId, messageId })

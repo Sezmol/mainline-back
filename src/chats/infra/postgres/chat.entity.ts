@@ -56,7 +56,7 @@ export class ChatEntity {
   @Column({ type: 'boolean', default: false })
   writeRestricted!: boolean;
 
-  @Column({ type: 'timestamptz', default: () => 'now()' })
+  @Column({ type: 'timestamptz', precision: 3, default: () => 'now()' })
   lastMessageAt!: Date;
 
   @CreateDateColumn({ type: 'timestamptz' })

@@ -34,6 +34,6 @@ export class CompanyMemberEntity {
   @Column({ type: 'enum', enum: [...COMPANY_ROLES], default: 'employee' })
   role!: CompanyRole;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   joinedAt!: Date;
 }

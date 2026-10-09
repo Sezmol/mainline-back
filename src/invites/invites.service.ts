@@ -128,18 +128,12 @@ export class InvitesService {
     if (!invite || invite.invitee.id !== actor.id) {
       throw new NotFoundException('Invitation not found');
     }
-    if (invite.status !== 'pending') {
-      throw AppException.conflict('This invitation has already been answered');
-    }
 
     const decided = await this.dataSource.transaction(async (manager) => {
-      if (decision === 'accepted') await this.accept(invite, manager);
+      const updated = await this.invites.answer(invite.id, decision, manager);
+      if (!updated) throw this.alreadyAnswered();
 
-      const updated = await this.invites.setStatus(
-        invite.id,
-        decision,
-        manager,
-      );
+      if (decision === 'accepted') await this.accept(invite, manager);
 
       await this.notifications.create(
         {
@@ -166,11 +160,14 @@ export class InvitesService {
     if (!invite || invite.inviter.id !== actor.id) {
       throw new NotFoundException('Invitation not found');
     }
-    if (invite.status !== 'pending') {
-      throw AppException.conflict('This invitation has already been answered');
-    }
 
-    await this.invites.delete(inviteId);
+    if (!(await this.invites.deletePending(inviteId))) {
+      throw this.alreadyAnswered();
+    }
+  }
+
+  private alreadyAnswered() {
+    return AppException.conflict('This invitation has already been answered');
   }
 
   private async accept(invite: Invite, manager: EntityManager) {

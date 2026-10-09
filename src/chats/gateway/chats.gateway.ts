@@ -33,6 +33,7 @@ export interface ChatServerEvents {
   unread_changed: (payload: { chatId: string; unreadCount: number }) => void;
   notification_created: () => void;
   board_changed: (payload: { projectId: string }) => void;
+  session_expired: () => void;
 }
 
 type ChatServer = Server<
@@ -73,7 +74,15 @@ export class ChatsGateway
   }
 
   async handleConnection(socket: ChatSocket) {
-    const { user } = socket.data;
+    const { user, expiresAt } = socket.data;
+
+    const expiry = setTimeout(() => {
+      socket.emit('session_expired');
+      socket.disconnect();
+    }, expiresAt - Date.now());
+
+    socket.once('disconnect', () => clearTimeout(expiry));
+
     const chatIds = await this.chats.findChatIds(user.id);
 
     await socket.join([userRoom(user.id), ...chatIds.map(chatRoom)]);

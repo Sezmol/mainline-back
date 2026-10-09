@@ -32,7 +32,7 @@ export class ChatParticipantEntity {
   @Column({ type: 'boolean', default: true })
   canWrite!: boolean;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', precision: 3, nullable: true })
   lastReadAt!: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
