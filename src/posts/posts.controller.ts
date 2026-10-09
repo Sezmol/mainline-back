@@ -192,8 +192,12 @@ export class PostsController {
     description: 'Paged: a popular post is not a list you send in one piece.',
   })
   @ZodResponse({ status: 200, type: LikePageDto })
-  likes(@Param('id', ParseUUIDPipe) id: string, @Query() query: PageQueryDto) {
-    return this.posts.findLikePage(id, query);
+  likes(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+    @Query() query: PageQueryDto,
+  ) {
+    return this.posts.findLikePage(id, user.id, query);
   }
 
   @Get(':id/chat')
