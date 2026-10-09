@@ -2,10 +2,12 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { decodeCursor } from './cursor';
 
+const idSchema = z.guid();
+
 const cursorSchema = z.string().transform((raw, ctx) => {
   const cursor = decodeCursor(raw);
 
-  if (!cursor) {
+  if (!cursor || !idSchema.safeParse(cursor.id).success) {
     ctx.addIssue({
       code: 'custom',
       message: 'That page cursor is not readable',
