@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChatsModule } from '../chats/chats.module';
 import { MessageEntity } from '../chats/infra/postgres/message.entity';
-import { CompanyMemberEntity } from '../companies/infra/postgres/company-member.entity';
-import { TeamMemberEntity } from '../companies/infra/postgres/team-member.entity';
+import { CompaniesModule } from '../companies/companies.module';
 import { InteractionEntity } from '../interactions/infra/postgres/interaction.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ProjectsModule } from '../projects/projects.module';
@@ -23,10 +22,9 @@ import { PostsService } from './posts.service';
       PostAssigneeEntity,
       InteractionEntity,
       MessageEntity,
-      CompanyMemberEntity,
-      TeamMemberEntity,
     ]),
     ChatsModule,
+    CompaniesModule,
     ProjectsModule,
     NotificationsModule,
   ],

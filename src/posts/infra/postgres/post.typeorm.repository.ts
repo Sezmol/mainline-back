@@ -9,7 +9,6 @@ import type {
   CreatePostInput,
   FindLikesQuery,
   FindPostsQuery,
-  Post,
   PostDetails,
   UpdatePostInput,
 } from '../../posts.types';
@@ -141,7 +140,7 @@ export class PostTypeormRepository extends PostsRepository {
     return this.posts.existsBy({ id });
   }
 
-  async findById(id: string, viewerId: string): Promise<Post | null> {
+  async findById(id: string, viewerId: string) {
     const found = await this.posts.findOne({
       where: { id },
       relations: { author: true, company: true },
@@ -169,7 +168,7 @@ export class PostTypeormRepository extends PostsRepository {
       .leftJoinAndSelect('post.company', 'company')
       .orderBy('post.createdAt', 'DESC')
       .addOrderBy('post.id', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (type) query.andWhere('post.type = :type', { type });
     if (direction) query.andWhere('post.direction = :direction', { direction });
@@ -283,7 +282,7 @@ export class PostTypeormRepository extends PostsRepository {
       .where('postLike.postId = :postId', { postId })
       .orderBy('postLike.createdAt', 'DESC')
       .addOrderBy('postLike.userId', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (cursor) {
       query.andWhere(

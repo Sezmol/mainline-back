@@ -1,17 +1,12 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import type { EntityManager } from 'typeorm';
 import { CompaniesRepository } from './companies.repository';
-import type { CompanyContext } from './company-access';
 
 @Injectable()
 export class CompanyContextService {
   constructor(protected readonly companies: CompaniesRepository) {}
 
-  async context(
-    companyId: string,
-    userId: string,
-    manager?: EntityManager,
-  ): Promise<CompanyContext> {
+  async context(companyId: string, userId: string, manager?: EntityManager) {
     const membership = await this.companies.findMembership(
       companyId,
       userId,
@@ -21,7 +16,7 @@ export class CompanyContextService {
     return { userId, role: membership?.role ?? null };
   }
 
-  protected assert(allowed: boolean, message: string): void {
+  protected assert(allowed: boolean, message: string) {
     if (!allowed) throw new ForbiddenException(message);
   }
 

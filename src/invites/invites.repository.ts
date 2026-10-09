@@ -16,10 +16,10 @@ export abstract class InvitesRepository {
     manager?: EntityManager,
   ): Promise<Invite | null>;
   abstract findMany(query: FindInvitesQuery): Promise<Invite[]>;
-  abstract setStatus(
+  abstract answer(
     id: string,
     status: Extract<InviteStatus, 'accepted' | 'declined'>,
     manager: EntityManager,
-  ): Promise<Invite>;
-  abstract delete(id: string): Promise<void>;
+  ): Promise<Invite | null>;
+  abstract deletePending(id: string): Promise<boolean>;
 }

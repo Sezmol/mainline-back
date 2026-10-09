@@ -13,7 +13,7 @@ export const ROLES = ['member', 'hr', 'manager'] as const;
 
 export type Role = (typeof ROLES)[number];
 
-export const roleForSpeciality = (speciality: Speciality): Role => {
+export const roleForSpeciality = (speciality: Speciality) => {
   switch (speciality) {
     case 'hr':
       return 'hr';

@@ -14,8 +14,6 @@ export const publicUserSchema = z.object({
   workplace: z.string().optional(),
 });
 
-export class PublicUserDto extends createZodDto(publicUserSchema) {}
-
 export const sessionUserSchema = publicUserSchema.extend({
   email: z.email(),
 });
@@ -28,7 +26,7 @@ export const profileSchema = publicUserSchema.extend({
 
 export class ProfileDto extends createZodDto(profileSchema) {}
 
-export const toPublicUser = (user: User): PublicUserDto => ({
+export const toPublicUser = (user: User) => ({
   id: user.id,
   firstName: user.firstName,
   lastName: user.lastName,
@@ -39,12 +37,12 @@ export const toPublicUser = (user: User): PublicUserDto => ({
   ...(user.workplace ? { workplace: user.workplace } : {}),
 });
 
-export const toSessionUser = (user: User): SessionUserDto => ({
+export const toSessionUser = (user: User) => ({
   ...toPublicUser(user),
   email: user.email,
 });
 
-export const toProfile = (user: User): ProfileDto => ({
+export const toProfile = (user: User) => ({
   ...toPublicUser(user),
   createdAt: user.createdAt.toISOString(),
 });

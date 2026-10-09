@@ -8,6 +8,7 @@ import type { User } from '../../users/users.types';
 
 export interface SocketData {
   user: User;
+  expiresAt: number;
 }
 
 export type ChatSocket = Socket<
@@ -25,16 +26,17 @@ export interface WsAuthDeps {
 
 export const wsAuth =
   (deps: WsAuthDeps) =>
-  (socket: ChatSocket, next: (error?: ExtendedError) => void): void => {
-    void resolveUser(deps, socket).then((user) => {
-      if (!user) return next(new Error('unauthorized'));
+  (socket: ChatSocket, next: (error?: ExtendedError) => void) => {
+    void resolveSession(deps, socket).then((session) => {
+      if (!session) return next(new Error('unauthorized'));
 
-      socket.data.user = user;
+      socket.data.user = session.user;
+      socket.data.expiresAt = session.expiresAt;
       next();
     });
   };
 
-const resolveUser = async (
+const resolveSession = async (
   { jwt, users, secret }: WsAuthDeps,
   socket: ChatSocket,
 ) => {
@@ -44,10 +46,12 @@ const resolveUser = async (
   if (!token) return null;
 
   try {
-    const { sub } = await jwt.verifyAsync<AccessTokenPayload>(token, {
-      secret,
-    });
-    return await users.findById(sub);
+    const { sub, exp } = await jwt.verifyAsync<
+      AccessTokenPayload & { exp: number }
+    >(token, { secret });
+
+    const user = await users.findById(sub);
+    return user ? { user, expiresAt: exp * 1000 } : null;
   } catch {
     return null;
   }

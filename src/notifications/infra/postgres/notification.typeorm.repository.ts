@@ -44,7 +44,7 @@ export class NotificationTypeormRepository extends NotificationsRepository {
       .where('notification.userId = :userId', { userId })
       .orderBy('notification.createdAt', 'DESC')
       .addOrderBy('notification.id', 'DESC')
-      .take(limit);
+      .limit(limit);
 
     if (cursor) {
       query.andWhere(

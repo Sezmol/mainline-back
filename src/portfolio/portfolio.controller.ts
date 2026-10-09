@@ -21,7 +21,7 @@ import { UpdatePortfolioItemDto } from './dto/update-portfolio-item.dto';
 import { PortfolioService } from './portfolio.service';
 import type { PortfolioItem } from './portfolio.types';
 
-const toPortfolioItemDto = (item: PortfolioItem): PortfolioItemDto => ({
+const toPortfolioItemDto = (item: PortfolioItem) => ({
   id: item.id,
   title: item.title,
   ...(item.description ? { description: item.description } : {}),

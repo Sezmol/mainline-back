@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
-import { encodeCursor } from '../common/pagination/cursor';
 import { PageQueryDto } from '../common/pagination/page-query.dto';
 import { toPublicUser } from '../users/dto/user.dto';
 import type { User } from '../users/users.types';
@@ -67,19 +66,8 @@ export class ChatsController {
   })
   @ZodResponse({ status: 200, type: ChatPageDto })
   async list(@CurrentUser() user: User, @Query() query: ChatListQueryDto) {
-    const items = await this.chats.list(user.id, query);
-    const last = items.at(-1);
-
-    return {
-      items: items.map(toChatViewDto),
-      nextCursor:
-        items.length === query.limit && last
-          ? encodeCursor({
-              createdAt: last.chat.lastMessageAt,
-              id: last.chat.id,
-            })
-          : null,
-    };
+    const page = await this.chats.list(user.id, query);
+    return { ...page, items: page.items.map(toChatViewDto) };
   }
 
   @Get(':id')
@@ -124,16 +112,8 @@ export class ChatsController {
     @CurrentUser() user: User,
     @Query() query: PageQueryDto,
   ) {
-    const items = await this.chats.messages(id, user.id, query);
-    const last = items.at(-1);
-
-    return {
-      items: items.map(toMessageDto),
-      nextCursor:
-        items.length === query.limit && last
-          ? encodeCursor({ createdAt: last.createdAt, id: last.id })
-          : null,
-    };
+    const page = await this.chats.messages(id, user.id, query);
+    return { ...page, items: page.items.map(toMessageDto) };
   }
 
   @Post(':id/messages')

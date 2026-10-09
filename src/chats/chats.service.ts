@@ -6,7 +6,8 @@ import {
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, type EntityManager } from 'typeorm';
 import { AppException } from '../common/errors/app.exception';
-import { decodeCursor } from '../common/pagination/cursor';
+import { toPage, type Cursor } from '../common/pagination/cursor';
+import { AfterCommit } from '../infra/database/after-commit';
 import { UsersService } from '../users/users.service';
 import type { GroupChatType } from '../common/domain/directory';
 import type { User } from '../users/users.types';
@@ -25,7 +26,7 @@ import { dedupeKey } from './dedupe-key';
 import type { ChatListQueryDto } from './dto/chat-queries.dto';
 
 interface Page {
-  cursor?: string;
+  cursor?: Cursor;
   limit: number;
 }
 
@@ -35,6 +36,7 @@ export class ChatsService {
     private readonly chats: ChatsRepository,
     private readonly users: UsersService,
     private readonly events: ChatEventsPublisher,
+    private readonly afterCommit: AfterCommit,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
@@ -122,14 +124,17 @@ export class ChatsService {
     manager?: EntityManager,
     revive = false,
   ) {
-    const membership = manager
+    const joined = manager
       ? await this.chats.addParticipant(chat.id, userId, manager, revive)
       : await this.dataSource.transaction((tx) =>
           this.chats.addParticipant(chat.id, userId, tx, revive),
         );
 
-    this.events.chatCreated(chat, [userId]);
-    return membership;
+    if (joined) {
+      this.afterCommit.run(manager, () =>
+        this.events.chatCreated(chat, [userId]),
+      );
+    }
   }
 
   ensureCompanyChat(
@@ -187,7 +192,9 @@ export class ChatsService {
       manager,
     )) {
       if (await this.chats.removeParticipantIn(chat.id, userId, manager)) {
-        this.events.participantRemoved(chat.id, userId);
+        this.afterCommit.run(manager, () =>
+          this.events.participantRemoved(chat.id, userId),
+        );
       }
     }
   }
@@ -224,7 +231,9 @@ export class ChatsService {
     if (!chat) return;
 
     if (await this.chats.removeParticipantIn(chat.id, userId, manager)) {
-      this.events.participantRemoved(chat.id, userId);
+      this.afterCommit.run(manager, () =>
+        this.events.participantRemoved(chat.id, userId),
+      );
     }
   }
 
@@ -239,9 +248,11 @@ export class ChatsService {
       manager,
     );
 
-    for (const chatId of chatIds) {
-      this.events.participantRemoved(chatId, userId);
-    }
+    this.afterCommit.run(manager, () => {
+      for (const chatId of chatIds) {
+        this.events.participantRemoved(chatId, userId);
+      }
+    });
   }
 
   async renameGroup(
@@ -256,7 +267,8 @@ export class ChatsService {
     );
     if (!chat) return;
 
-    this.events.chatUpdated(await this.chats.setTitle(chat.id, title, manager));
+    const updated = await this.chats.setTitle(chat.id, title, manager);
+    this.afterCommit.run(manager, () => this.events.chatUpdated(updated));
   }
 
   async deleteGroupChat(
@@ -273,9 +285,11 @@ export class ChatsService {
     const participants = await this.chats.findParticipants(chat.id);
     await this.chats.deleteByDedupeKey(dedupeKey[type](containerId), manager);
 
-    for (const participant of participants) {
-      this.events.participantRemoved(chat.id, participant.user.id);
-    }
+    this.afterCommit.run(manager, () => {
+      for (const participant of participants) {
+        this.events.participantRemoved(chat.id, participant.user.id);
+      }
+    });
   }
 
   async setGroupOwner(
@@ -285,9 +299,9 @@ export class ChatsService {
     manager: EntityManager,
   ) {
     const chat = await this.requireGroupChat(type, containerId, manager);
-    this.events.chatUpdated(
-      await this.chats.setOwner(chat.id, ownerId, manager),
-    );
+    const updated = await this.chats.setOwner(chat.id, ownerId, manager);
+
+    this.afterCommit.run(manager, () => this.events.chatUpdated(updated));
   }
 
   findGroupChat(type: GroupChatType, containerId: string) {
@@ -344,14 +358,19 @@ export class ChatsService {
   }
 
   async list(userId: string, query: ChatListQueryDto) {
-    const items = await this.chats.findMany({
+    const found = await this.chats.findMany({
       userId,
       archived: query.archived,
       ...(query.type ? { type: query.type } : {}),
-      ...this.page(query),
+      ...(query.cursor ? { cursor: query.cursor } : {}),
+      limit: query.limit + 1,
     });
 
-    return items.map((item) => this.toView(item));
+    return toPage(
+      found.map((item) => this.toView(item)),
+      query.limit,
+      (view) => ({ createdAt: view.chat.lastMessageAt, id: view.chat.id }),
+    );
   }
 
   async findById(chatId: string, viewerId: string) {
@@ -374,7 +393,7 @@ export class ChatsService {
     return this.chats.findParticipants(chatId);
   }
 
-  async messages(chatId: string, viewerId: string, query: Page) {
+  async messages(chatId: string, viewerId: string, { cursor, limit }: Page) {
     const chat = await this.chats.findById(chatId);
     if (!chat) throw new NotFoundException('Chat not found');
 
@@ -382,7 +401,13 @@ export class ChatsService {
       await this.requireMembership(chatId, viewerId);
     }
 
-    return this.chats.findMessages({ chatId, ...this.page(query) });
+    const found = await this.chats.findMessages({
+      chatId,
+      ...(cursor ? { cursor } : {}),
+      limit: limit + 1,
+    });
+
+    return toPage(found, limit, (message) => message);
   }
 
   async send(
@@ -580,16 +605,6 @@ export class ChatsService {
     return { chat, membership };
   }
 
-  private page({ cursor, limit }: Page) {
-    const decoded = cursor ? decodeCursor(cursor) : null;
-
-    if (cursor && !decoded) {
-      throw AppException.validation('That page cursor is not readable');
-    }
-
-    return { limit, ...(decoded ? { cursor: decoded } : {}) };
-  }
-
   private async ensure(input: CreateChatInput, manager?: EntityManager) {
     const existing = await this.chats.findByDedupeKey(input.dedupeKey, manager);
     if (existing) return existing;
@@ -601,7 +616,9 @@ export class ChatsService {
             this.chats.create(input, tx),
           );
 
-      this.events.chatCreated(chat, input.participantIds);
+      this.afterCommit.run(manager, () =>
+        this.events.chatCreated(chat, input.participantIds),
+      );
       return chat;
     } catch (error) {
       if (!(error instanceof ChatExistsError)) throw error;

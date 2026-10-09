@@ -8,8 +8,6 @@ import {
   NicknameTakenError,
   type CreateUserInput,
   type UpdateUserInput,
-  type User,
-  type UserWithPassword,
 } from '../../users.types';
 import { UserEntity } from './user.entity';
 import { toUser } from './user.mapper';
@@ -57,21 +55,19 @@ export class UserTypeormRepository extends UsersRepository {
     return updated;
   }
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string) {
     const found = await this.users.findOne({ where: { id } });
     return found ? toUser(found) : null;
   }
 
-  async findByNickname(nickname: string): Promise<User | null> {
+  async findByNickname(nickname: string) {
     const found = await this.users.findOne({
       where: { nickname: nickname.toLowerCase() },
     });
     return found ? toUser(found) : null;
   }
 
-  async findWithPasswordByNickname(
-    nickname: string,
-  ): Promise<UserWithPassword | null> {
+  async findWithPasswordByNickname(nickname: string) {
     const found = await this.users
       .createQueryBuilder('user')
       .addSelect('user.passwordHash')

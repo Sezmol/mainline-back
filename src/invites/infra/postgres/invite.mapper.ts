@@ -1,8 +1,7 @@
 import { toUser } from '../../../users/infra/postgres/user.mapper';
-import type { Invite } from '../../invites.types';
 import type { InviteEntity } from './invite.entity';
 
-export const toInvite = (entity: InviteEntity): Invite => ({
+export const toInvite = (entity: InviteEntity) => ({
   id: entity.id,
   scope: entity.scope,
   status: entity.status,

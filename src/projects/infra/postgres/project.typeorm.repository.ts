@@ -9,11 +9,8 @@ import { ProjectsRepository } from '../../projects.repository';
 import {
   ColumnExistsError,
   ProjectExistsError,
-  type BoardColumn,
   type CreateColumnInput,
   type CreateProjectInput,
-  type Project,
-  type ProjectMembership,
   type TaskCounts,
   type UpdateColumnInput,
   type UpdateProjectInput,
@@ -45,14 +42,14 @@ interface MembershipRow {
   isCompanyOwner: boolean;
 }
 
-const toColumn = (entity: BoardColumnEntity): BoardColumn => ({
+const toColumn = (entity: BoardColumnEntity) => ({
   id: entity.id,
   name: entity.name,
   kind: entity.kind,
   position: entity.position,
 });
 
-const toProject = (entity: ProjectEntity): Project => ({
+const toProject = (entity: ProjectEntity) => ({
   id: entity.id,
   name: entity.name,
   description: entity.description,
@@ -160,7 +157,7 @@ export class ProjectTypeormRepository extends ProjectsRepository {
     projectId: string,
     userId: string,
     manager?: EntityManager,
-  ): Promise<ProjectMembership> {
+  ) {
     const [row] = await this.repo(manager).query<MembershipRow[]>(
       `SELECT p."managerId" = $2 AS "isManager",
               EXISTS (

@@ -56,6 +56,7 @@ import { TeamsService } from './teams.service';
     CompaniesRepository,
     DepartmentsService,
     TeamsService,
+    TeamsRepository,
   ],
 })
 export class CompaniesModule {}

@@ -11,12 +11,6 @@ export interface AccessTokenPayload {
   role: string;
 }
 
-export interface IssuedRefreshToken {
-  token: string;
-  tokenHash: string;
-  expiresAt: Date;
-}
-
 const DURATION_PATTERN = /^(\d+)([smhd])$/;
 const UNIT_MS = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 } as const;
 
@@ -60,7 +54,7 @@ export class TokenService {
     });
   }
 
-  issueRefreshToken(): IssuedRefreshToken {
+  issueRefreshToken() {
     const token = randomBytes(48).toString('base64url');
 
     return {

@@ -31,11 +31,6 @@ import {
 
 type Decision = 'accepted' | 'declined';
 
-interface ResolvedTarget {
-  name: string;
-  companyId: string | null;
-}
-
 @Injectable()
 export class InvitesService {
   constructor(
@@ -63,11 +58,7 @@ export class InvitesService {
     });
   }
 
-  async invite(
-    target: InviteTarget,
-    actor: User,
-    dto: CreateInviteDto,
-  ): Promise<Invite> {
+  async invite(target: InviteTarget, actor: User, dto: CreateInviteDto) {
     const invitee = await this.users.getByNickname(dto.nickname);
 
     if (invitee.id === actor.id) {
@@ -118,28 +109,18 @@ export class InvitesService {
     return invite;
   }
 
-  async decide(
-    inviteId: string,
-    actor: User,
-    decision: Decision,
-  ): Promise<Invite> {
+  async decide(inviteId: string, actor: User, decision: Decision) {
     const invite = await this.invites.findById(inviteId);
 
     if (!invite || invite.invitee.id !== actor.id) {
       throw new NotFoundException('Invitation not found');
     }
-    if (invite.status !== 'pending') {
-      throw AppException.conflict('This invitation has already been answered');
-    }
 
     const decided = await this.dataSource.transaction(async (manager) => {
-      if (decision === 'accepted') await this.accept(invite, manager);
+      const updated = await this.invites.answer(invite.id, decision, manager);
+      if (!updated) throw this.alreadyAnswered();
 
-      const updated = await this.invites.setStatus(
-        invite.id,
-        decision,
-        manager,
-      );
+      if (decision === 'accepted') await this.accept(invite, manager);
 
       await this.notifications.create(
         {
@@ -166,11 +147,14 @@ export class InvitesService {
     if (!invite || invite.inviter.id !== actor.id) {
       throw new NotFoundException('Invitation not found');
     }
-    if (invite.status !== 'pending') {
-      throw AppException.conflict('This invitation has already been answered');
-    }
 
-    await this.invites.delete(inviteId);
+    if (!(await this.invites.deletePending(inviteId))) {
+      throw this.alreadyAnswered();
+    }
+  }
+
+  private alreadyAnswered() {
+    return AppException.conflict('This invitation has already been answered');
   }
 
   private async accept(invite: Invite, manager: EntityManager) {
@@ -242,7 +226,7 @@ export class InvitesService {
     target: InviteTarget,
     actor: User,
     invitee: User,
-  ): Promise<ResolvedTarget> {
+  ) {
     switch (target.scope) {
       case 'company': {
         const company = await this.companies.require(target.companyId);

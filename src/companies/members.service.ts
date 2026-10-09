@@ -5,7 +5,7 @@ import { ChatEventsPublisher } from '../chats/chat-events.publisher';
 import { ChatsService } from '../chats/chats.service';
 import type { CompanyRole } from '../common/domain/directory';
 import { AppException } from '../common/errors/app.exception';
-import { decodeCursor, encodeCursor } from '../common/pagination/cursor';
+import { toPage } from '../common/pagination/cursor';
 import type { PageQueryDto } from '../common/pagination/page-query.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { User } from '../users/users.types';
@@ -33,27 +33,16 @@ export class MembersService extends CompanyContextService {
     const ctx = await this.context(companyId, viewerId);
     this.assert(companyAccess.read(ctx), 'Only employees see the staff list');
 
-    const decoded = query.cursor ? decodeCursor(query.cursor) : null;
-    if (query.cursor && !decoded) {
-      throw AppException.validation('That page cursor is not readable');
-    }
-
     const found = await this.companies.findMembers({
       companyId,
-      ...(decoded ? { cursor: decoded } : {}),
+      ...(query.cursor ? { cursor: query.cursor } : {}),
       limit: query.limit + 1,
     });
 
-    const items = found.slice(0, query.limit);
-    const last = items.at(-1);
-
-    return {
-      items,
-      nextCursor:
-        found.length > query.limit && last
-          ? encodeCursor({ createdAt: last.joinedAt, id: last.user.id })
-          : null,
-    };
+    return toPage(found, query.limit, (member) => ({
+      createdAt: member.joinedAt,
+      id: member.user.id,
+    }));
   }
 
   async setRole(

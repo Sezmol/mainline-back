@@ -39,7 +39,7 @@ export class CompanyEntity {
 
   employeeCount?: number;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   createdAt!: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })

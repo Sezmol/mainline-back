@@ -10,10 +10,10 @@ export abstract class RefreshTokenRepository {
     manager?: EntityManager,
   ): Promise<RefreshTokenRecord>;
 
-  abstract findByHash(
+  abstract consume(
     tokenHash: string,
-    manager?: EntityManager,
-  ): Promise<RefreshTokenRecord | null>;
+    manager: EntityManager,
+  ): Promise<string | null>;
 
   abstract deleteByHash(
     tokenHash: string,
