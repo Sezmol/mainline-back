@@ -38,7 +38,7 @@ export abstract class ChatsRepository {
     userId: string,
     manager: EntityManager,
     revive?: boolean,
-  ): Promise<Membership>;
+  ): Promise<boolean>;
   abstract createMessage(
     input: CreateMessageInput,
     manager: EntityManager,

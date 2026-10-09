@@ -124,16 +124,17 @@ export class ChatsService {
     manager?: EntityManager,
     revive = false,
   ) {
-    const membership = manager
+    const joined = manager
       ? await this.chats.addParticipant(chat.id, userId, manager, revive)
       : await this.dataSource.transaction((tx) =>
           this.chats.addParticipant(chat.id, userId, tx, revive),
         );
 
-    this.afterCommit.run(manager, () =>
-      this.events.chatCreated(chat, [userId]),
-    );
-    return membership;
+    if (joined) {
+      this.afterCommit.run(manager, () =>
+        this.events.chatCreated(chat, [userId]),
+      );
+    }
   }
 
   ensureCompanyChat(
