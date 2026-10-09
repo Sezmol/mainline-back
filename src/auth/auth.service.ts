@@ -90,19 +90,18 @@ export class AuthService {
     const tokenHash = this.tokens.hashRefreshToken(rawToken);
 
     return this.dataSource.transaction(async (manager) => {
-      const record = await this.refreshTokens.findByHash(tokenHash, manager);
+      const userId = await this.refreshTokens.consume(tokenHash, manager);
 
-      if (!record || record.expiresAt.getTime() <= Date.now()) {
+      if (!userId) {
         throw AppException.unauthorized('Session expired. Sign in again.');
       }
 
-      const user = await this.users.findById(record.userId);
+      const user = await this.users.findById(userId);
 
       if (!user) {
         throw AppException.unauthorized('This session is no longer valid');
       }
 
-      await this.refreshTokens.deleteByHash(tokenHash, manager);
       return this.issueSession(user, manager);
     });
   }

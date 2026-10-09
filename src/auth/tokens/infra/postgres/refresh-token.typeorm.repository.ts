@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, Repository, type EntityManager } from 'typeorm';
 import { RefreshTokenRepository } from '../../refresh-token.repository';
-import type {
-  CreateRefreshTokenInput,
-  RefreshTokenRecord,
-} from '../../refresh-token.types';
+import type { CreateRefreshTokenInput } from '../../refresh-token.types';
 import { RefreshTokenEntity } from './refresh-token.entity';
 
 const toRecord = (entity: RefreshTokenEntity) => ({
@@ -33,14 +30,18 @@ export class RefreshTokenTypeormRepository extends RefreshTokenRepository {
     return toRecord(await repository.save(repository.create(input)));
   }
 
-  async findByHash(
-    tokenHash: string,
-    manager?: EntityManager,
-  ): Promise<RefreshTokenRecord | null> {
-    const found = await this.repository(manager).findOne({
-      where: { tokenHash },
-    });
-    return found ? toRecord(found) : null;
+  async consume(tokenHash: string, manager: EntityManager) {
+    const deleted = await manager
+      .getRepository(RefreshTokenEntity)
+      .createQueryBuilder()
+      .delete()
+      .where('"tokenHash" = :tokenHash', { tokenHash })
+      .andWhere('"expiresAt" > now()')
+      .returning('"userId"')
+      .execute();
+
+    const [row] = deleted.raw as { userId: string }[];
+    return row?.userId ?? null;
   }
 
   async deleteByHash(tokenHash: string, manager?: EntityManager) {
