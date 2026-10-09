@@ -157,11 +157,11 @@ export class DepartmentTypeormRepository extends DepartmentsRepository {
       .orderBy('dm.joinedAt', 'ASC')
       .getMany();
 
-    return found.map((row) =>
-      toCompanyMember(
-        (row as unknown as { membership: CompanyMemberEntity }).membership,
-      ),
-    );
+    return found.map(({ userId, membership }) => {
+      if (!membership)
+        throw new Error(`Membership of ${userId} was not joined`);
+      return toCompanyMember(membership);
+    });
   }
 
   async isMember(
