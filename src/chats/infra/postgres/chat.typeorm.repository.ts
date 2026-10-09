@@ -277,7 +277,7 @@ export class ChatTypeormRepository extends ChatsRepository {
       .update()
       .set({
         lastReadAt: () =>
-          '(select "createdAt" from "messages" where "id" = :messageId)',
+          'GREATEST("lastReadAt", (select "createdAt" from "messages" where "id" = :messageId and "chatId" = :chatId))',
       })
       .where('"chatId" = :chatId and "userId" = :userId')
       .setParameters({ chatId, userId, messageId })
