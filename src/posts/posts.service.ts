@@ -3,18 +3,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { ChatEventsPublisher } from '../chats/chat-events.publisher';
 import { ChatsService } from '../chats/chats.service';
-import { CompanyMemberEntity } from '../companies/infra/postgres/company-member.entity';
-import { TeamMemberEntity } from '../companies/infra/postgres/team-member.entity';
+import { CompaniesRepository } from '../companies/companies.repository';
+import { TeamsRepository } from '../companies/teams.repository';
 import { DEFAULT_COLUMNS } from '../common/domain/directory';
 import { toPage } from '../common/pagination/cursor';
 import { AppException } from '../common/errors/app.exception';
 import { NotificationsService } from '../notifications/notifications.service';
 import { projectAccess } from '../projects/project-access';
 import { ProjectsRepository } from '../projects/projects.repository';
+import { ProjectsService } from '../projects/projects.service';
 import type { CreatePostDto } from './dto/create-post.dto';
 import type { PageQueryDto } from '../common/pagination/page-query.dto';
 import type { PostsQueryDto } from './dto/posts-query.dto';
@@ -35,14 +36,13 @@ export class PostsService {
   constructor(
     private readonly posts: PostsRepository,
     private readonly chats: ChatsService,
-    private readonly projects: ProjectsRepository,
+    private readonly projects: ProjectsService,
+    private readonly projectsRepository: ProjectsRepository,
+    private readonly companyMembers: CompaniesRepository,
+    private readonly teamMembers: TeamsRepository,
     private readonly notifications: NotificationsService,
     private readonly events: ChatEventsPublisher,
     @InjectDataSource() private readonly dataSource: DataSource,
-    @InjectRepository(CompanyMemberEntity)
-    private readonly companyMembers: Repository<CompanyMemberEntity>,
-    @InjectRepository(TeamMemberEntity)
-    private readonly teamMembers: Repository<TeamMemberEntity>,
   ) {}
 
   async findPage(
@@ -57,7 +57,7 @@ export class PostsService {
     }: PostsQueryDto,
     viewerId: string,
   ) {
-    if (projectId) await this.requireBoardAccess(projectId, viewerId);
+    if (projectId) await this.projects.openFor(projectId, viewerId);
 
     const found = await this.posts.findMany({
       viewerId,
@@ -191,16 +191,16 @@ export class PostsService {
       );
     }
 
-    const project = await this.projects.findById(task.projectId);
-    if (!project) throw new NotFoundException('Project not found');
-
-    const ctx = await this.taskContext(task, actor.id);
+    const { project, ctx } = await this.projects.context(
+      task.projectId,
+      actor.id,
+    );
 
     if (!projectAccess.assign(ctx)) {
       throw new ForbiddenException('Only the project manager assigns tasks');
     }
 
-    if (!(await this.isTeamMember(project.team.id, userId))) {
+    if (!(await this.teamMembers.isMember(project.team.id, userId))) {
       throw AppException.validation(
         'Add this person to the team before putting them on a task',
       );
@@ -310,7 +310,7 @@ export class PostsService {
 
   private async assertStatusExists(projectId: string | null, status: string) {
     const names = projectId
-      ? (await this.projects.findColumns(projectId)).map(
+      ? (await this.projectsRepository.findColumns(projectId)).map(
           (column) => column.name,
         )
       : DEFAULT_STATUSES;
@@ -333,17 +333,7 @@ export class PostsService {
       };
     }
 
-    const project = await this.projects.findById(task.projectId);
-    const membership = await this.projects.findMembership(
-      task.projectId,
-      userId,
-    );
-
-    return {
-      userId,
-      membersCanEditTasks: project?.membersCanEditTasks ?? false,
-      ...membership,
-    };
+    return (await this.projects.context(task.projectId, userId)).ctx;
   }
 
   private async requireTask(id: string, viewerId: string) {
@@ -368,44 +358,12 @@ export class PostsService {
     throw new NotFoundException('Post not found');
   }
 
-  private async requireBoardAccess(projectId: string, viewerId: string) {
-    const project = await this.projects.findById(projectId);
-    if (!project) throw new NotFoundException('Project not found');
-
-    const membership = await this.projects.findMembership(projectId, viewerId);
-    const ctx = {
-      userId: viewerId,
-      membersCanEditTasks: project.membersCanEditTasks,
-      ...membership,
-    };
-
-    if (!projectAccess.view(ctx)) {
-      throw new NotFoundException('Project not found');
-    }
-  }
-
   private async assertMayWriteTasks(projectId: string, userId: string) {
-    const project = await this.projects.findById(projectId);
-    if (!project) throw new NotFoundException('Project not found');
-
-    const membership = await this.projects.findMembership(projectId, userId);
-    const ctx = {
-      userId,
-      membersCanEditTasks: project.membersCanEditTasks,
-      ...membership,
-    };
-
-    if (!projectAccess.view(ctx)) {
-      throw new NotFoundException('Project not found');
-    }
+    const { ctx } = await this.projects.openFor(projectId, userId);
 
     if (!projectAccess.writeTasks(ctx)) {
       throw new ForbiddenException('This project does not let you add tasks');
     }
-  }
-
-  private isTeamMember(teamId: string, userId: string) {
-    return this.teamMembers.existsBy({ teamId, userId });
   }
 
   private async assertMayPostAs(
@@ -414,12 +372,7 @@ export class PostsService {
   ) {
     if (!companyId) return;
 
-    const works = await this.companyMembers.existsBy({
-      companyId,
-      userId: authorId,
-    });
-
-    if (!works) {
+    if (!(await this.companyMembers.findMembership(companyId, authorId))) {
       throw AppException.validation(
         'You can only post on behalf of a company you work for',
       );
