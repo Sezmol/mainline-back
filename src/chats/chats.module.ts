@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AfterCommit } from '../infra/database/after-commit';
 import { UsersModule } from '../users/users.module';
 import { ChatEventsPublisher } from './chat-events.publisher';
 import { ChatsController } from './chats.controller';
@@ -24,6 +25,7 @@ import { MessageEntity } from './infra/postgres/message.entity';
   ],
   controllers: [ChatsController],
   providers: [
+    AfterCommit,
     ChatsService,
     ChatsGateway,
     { provide: ChatsRepository, useClass: ChatTypeormRepository },
