@@ -26,7 +26,7 @@ export interface WsAuthDeps {
 
 export const wsAuth =
   (deps: WsAuthDeps) =>
-  (socket: ChatSocket, next: (error?: ExtendedError) => void): void => {
+  (socket: ChatSocket, next: (error?: ExtendedError) => void) => {
     void resolveSession(deps, socket).then((session) => {
       if (!session) return next(new Error('unauthorized'));
 

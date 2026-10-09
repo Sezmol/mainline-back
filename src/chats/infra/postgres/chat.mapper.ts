@@ -1,9 +1,8 @@
 import { toUser } from '../../../users/infra/postgres/user.mapper';
-import type { Chat, ChatParticipant, Membership } from '../../chats.types';
 import type { ChatParticipantEntity } from './chat-participant.entity';
 import type { ChatEntity } from './chat.entity';
 
-export const toChat = (entity: ChatEntity): Chat => ({
+export const toChat = (entity: ChatEntity) => ({
   id: entity.id,
   type: entity.type,
   post: entity.post
@@ -20,7 +19,7 @@ export const toChat = (entity: ChatEntity): Chat => ({
   createdAt: entity.createdAt,
 });
 
-export const toMembership = (entity: ChatParticipantEntity): Membership => ({
+export const toMembership = (entity: ChatParticipantEntity) => ({
   chatId: entity.chatId,
   userId: entity.userId,
   canWrite: entity.canWrite,
@@ -29,9 +28,7 @@ export const toMembership = (entity: ChatParticipantEntity): Membership => ({
   removedAt: entity.removedAt,
 });
 
-export const toParticipant = (
-  entity: ChatParticipantEntity,
-): ChatParticipant => ({
+export const toParticipant = (entity: ChatParticipantEntity) => ({
   user: toUser(entity.user),
   canWrite: entity.canWrite,
   joinedAt: entity.joinedAt,

@@ -6,7 +6,6 @@ import { asUniqueViolation } from '../../../infra/database/unique-violation';
 import { CompaniesRepository } from '../../companies.repository';
 import {
   SlugTakenError,
-  type Company,
   type CreateCompanyInput,
   type FindCompaniesQuery,
   type FindMembersQuery,
@@ -51,12 +50,12 @@ export class CompanyTypeormRepository extends CompaniesRepository {
     }
   }
 
-  async findById(id: string, manager?: EntityManager): Promise<Company | null> {
+  async findById(id: string, manager?: EntityManager) {
     const found = await this.repo(manager).findOne({ where: { id } });
     return found ? toCompany(found) : null;
   }
 
-  async findBySlug(slug: string): Promise<Company | null> {
+  async findBySlug(slug: string) {
     const found = await this.companies.findOne({ where: { slug } });
     return found ? toCompany(found) : null;
   }

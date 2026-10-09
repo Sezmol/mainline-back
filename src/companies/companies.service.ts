@@ -3,11 +3,11 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, type EntityManager } from 'typeorm';
 import { ChatsService } from '../chats/chats.service';
 import { AppException } from '../common/errors/app.exception';
-import { decodeCursor, encodeCursor } from '../common/pagination/cursor';
+import { toPage } from '../common/pagination/cursor';
 import type { User } from '../users/users.types';
 import { DEFAULT_DEPARTMENT_NAME } from './companies.constants';
 import { CompaniesRepository } from './companies.repository';
-import { SlugTakenError, type CompanyPage } from './companies.types';
+import { SlugTakenError } from './companies.types';
 import { companyAccess } from './company-access';
 import { CompanyContextService } from './company-context.service';
 import { DepartmentsRepository } from './departments.repository';
@@ -80,7 +80,7 @@ export class CompaniesService extends CompanyContextService {
     }
   }
 
-  async page(slug: string, viewerId?: string): Promise<CompanyPage> {
+  async page(slug: string, viewerId?: string) {
     const company = await this.companies.findBySlug(slug.toLowerCase());
     if (!company) throw new NotFoundException('Company not found');
 
@@ -100,25 +100,13 @@ export class CompaniesService extends CompanyContextService {
   }
 
   async list(query: CompaniesQueryDto) {
-    const decoded = query.cursor ? decodeCursor(query.cursor) : null;
-    if (query.cursor && !decoded) {
-      throw AppException.validation('That page cursor is not readable');
-    }
-
     const found = await this.companies.findMany({
       ...(query.q ? { search: query.q } : {}),
-      ...(decoded ? { cursor: decoded } : {}),
+      ...(query.cursor ? { cursor: query.cursor } : {}),
       limit: query.limit + 1,
     });
 
-    const items = found.slice(0, query.limit);
-    const last = items.at(-1);
-
-    return {
-      items,
-      nextCursor:
-        found.length > query.limit && last ? encodeCursor(last) : null,
-    };
+    return toPage(found, query.limit, (company) => company);
   }
 
   async availability(slug: string) {

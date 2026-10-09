@@ -17,7 +17,7 @@ import { InteractionDto } from './dto/interaction.dto';
 import { InteractionsService } from './interactions.service';
 import type { Interaction } from './interactions.types';
 
-const toInteractionDto = (interaction: Interaction): InteractionDto => ({
+const toInteractionDto = (interaction: Interaction) => ({
   id: interaction.id,
   postId: interaction.postId,
   kind: interaction.kind,

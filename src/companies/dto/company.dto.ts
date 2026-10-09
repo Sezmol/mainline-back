@@ -24,7 +24,7 @@ export const companySchema = z.object({
 
 export class CompanyDto extends createZodDto(companySchema) {}
 
-export const toCompanyDto = (company: Company): CompanyDto => ({
+export const toCompanyDto = (company: Company) => ({
   ...company,
   createdAt: company.createdAt.toISOString(),
   updatedAt: company.updatedAt.toISOString(),
@@ -36,7 +36,7 @@ export const companyCardSchema = companySchema.extend({
 
 export class CompanyCardDto extends createZodDto(companyCardSchema) {}
 
-export const toCompanyCardDto = (company: CompanyCard): CompanyCardDto => ({
+export const toCompanyCardDto = (company: CompanyCard) => ({
   ...toCompanyDto(company),
   employeeCount: company.employeeCount,
 });
@@ -61,7 +61,7 @@ export const companyPageSchema = companyCardSchema.extend({
 
 export class CompanyPageDto extends createZodDto(companyPageSchema) {}
 
-export const toCompanyPageDto = (page: CompanyPage): CompanyPageDto => ({
+export const toCompanyPageDto = (page: CompanyPage) => ({
   ...toCompanyCardDto(page),
   vacancyCount: page.vacancyCount,
   viewer: page.viewer,
@@ -82,7 +82,7 @@ export const memberSchema = z.object({
 
 export class MemberDto extends createZodDto(memberSchema) {}
 
-export const toMemberDto = (member: CompanyMember): MemberDto => ({
+export const toMemberDto = (member: CompanyMember) => ({
   user: toPublicUser(member.user),
   role: member.role,
   joinedAt: member.joinedAt.toISOString(),

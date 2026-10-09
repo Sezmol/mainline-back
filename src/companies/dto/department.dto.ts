@@ -31,7 +31,7 @@ export const departmentSchema = z.object({
 
 export class DepartmentDto extends createZodDto(departmentSchema) {}
 
-export const toDepartmentDto = (department: Department): DepartmentDto => ({
+export const toDepartmentDto = (department: Department) => ({
   ...department,
   manager: department.manager ? toPublicUser(department.manager) : null,
   createdAt: department.createdAt.toISOString(),

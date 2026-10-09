@@ -8,6 +8,7 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { UserEntity } from '../../../users/infra/postgres/user.entity';
+import type { CompanyMemberEntity } from './company-member.entity';
 import { DepartmentEntity } from './department.entity';
 
 @Entity('department_members')
@@ -32,4 +33,6 @@ export class DepartmentMemberEntity {
 
   @CreateDateColumn({ type: 'timestamptz' })
   joinedAt!: Date;
+
+  membership?: CompanyMemberEntity;
 }

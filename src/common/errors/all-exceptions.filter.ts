@@ -42,14 +42,7 @@ const STATUS_TO_CODE: Partial<Record<number, ErrorCode>> = {
 
 const SERVER_ERROR_THRESHOLD = 500;
 
-interface Described {
-  status: number;
-  code: ErrorCode;
-  message: string;
-  details?: FieldErrors;
-}
-
-const describe = (exception: unknown): Described => {
+const describe = (exception: unknown) => {
   if (exception instanceof AppException) {
     return {
       status: exception.getStatus(),

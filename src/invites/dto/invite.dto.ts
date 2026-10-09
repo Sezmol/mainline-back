@@ -26,7 +26,7 @@ export const inviteSchema = z.object({
 
 export class InviteDto extends createZodDto(inviteSchema) {}
 
-export const toInviteDto = (invite: Invite): InviteDto => ({
+export const toInviteDto = (invite: Invite) => ({
   id: invite.id,
   scope: invite.scope,
   status: invite.status,

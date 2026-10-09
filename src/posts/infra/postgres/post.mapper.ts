@@ -1,8 +1,7 @@
 import { toUser } from '../../../users/infra/postgres/user.mapper';
-import type { Post, PostView } from '../../posts.types';
 import type { PostEntity } from './post.entity';
 
-const toDetails = (entity: PostEntity): PostView => {
+const toDetails = (entity: PostEntity) => {
   const common = {
     direction: entity.direction,
     title: entity.title,
@@ -62,7 +61,7 @@ const toDetails = (entity: PostEntity): PostView => {
   }
 };
 
-export const toPost = (entity: PostEntity): Post => ({
+export const toPost = (entity: PostEntity) => ({
   ...toDetails(entity),
   id: entity.id,
   author: toUser(entity.author),

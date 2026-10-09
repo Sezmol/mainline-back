@@ -48,7 +48,7 @@ export const teamSchema = z.object({
 
 export class TeamDto extends createZodDto(teamSchema) {}
 
-export const toTeamDto = (team: Team): TeamDto => ({
+export const toTeamDto = (team: Team) => ({
   ...team,
   manager: toPublicUser(team.manager),
   createdAt: team.createdAt.toISOString(),
@@ -64,7 +64,7 @@ export const teamMemberSchema = z.object({
 
 export class TeamMemberDto extends createZodDto(teamMemberSchema) {}
 
-export const toTeamMemberDto = (member: TeamMember): TeamMemberDto => ({
+export const toTeamMemberDto = (member: TeamMember) => ({
   user: toPublicUser(member.user),
   companyRole: member.companyRole,
   departments: member.departments,

@@ -31,7 +31,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
 import type { Post as DomainPost } from './posts.types';
 
-const toPostDto = (post: DomainPost): PostDto => {
+const toPostDto = (post: DomainPost) => {
   const common = {
     id: post.id,
     direction: post.direction,
